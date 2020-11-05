@@ -5,37 +5,44 @@ package vdfloc
 //	Compatible with utf8 and utf16BE encoding
 
 import (
-	"bufio"
-	"bytes"
-	"flag"
+	// "bufio"
+	// "bytes"
+	// "flag"
 	"fmt"
+	"io"
+	"errors"
 	// "io/ioutil"
-	"log"
+	// "log"
 	"os"
 )
 
-
 type VDFFile struct {
-	name						string
-	f								*os.File
-	encoding				string
-	logWriter       io.Writer
-	debug           bool
-	cParenth				[]byte
-	cDbleQuote			[]byte
-	cDbleSlash			[]byte
-	cBackSlash			[]byte
-	cLineFeed				[]byte
-	cCarriageRet		[]byte
-	cCRLF						[]byte
-	cTab						[]byte
-	bom							[]byte
+	name        	string
+	f           	*os.File
+	encoding    	string
+	logWriter   	io.Writer
+	debug       	bool
+	cParenth    	[]byte
+	cDbleQuote  	[]byte
+	cDbleSlash  	[]byte
+	cBackSlash  	[]byte
+	cLineFeed   	[]byte
+	cCarriageRet	[]byte
+	cCRLF       	[]byte
+	cTab        	[]byte
+	bom         	[]byte
 }
 
 // Create a new instance
 // - lookup path to p4 command
 // - Returns instance and error code
 func New(fileName string) (*VDFFile, error) {
+
+	// validate parameter
+	if fileName == nil {
+		return nil,  errors.New(fmt.Sprintf("File name cannot be empty"))
+	}
+
 	v := &VDFFile{} // Create instance
 
 	var err error
@@ -55,35 +62,16 @@ func New(fileName string) (*VDFFile, error) {
 	v.cDbleSlash = []byte{'/', '/'}
 	v.cTab = []byte{'\t'}
 	v.cBackSlash = []byte{'\\'}
-	v.cLineFeed, cCarriageRet = []byte{'\n'}, []byte{'\r'}
+	v.cLineFeed, v.cCarriageRet = []byte{'\n'}, []byte{'\r'}
 	v.cCRLF = append([]byte{'\r'}, []byte{'\n'}...)
 
 	return v, nil
 }
 
-
-
-func main() {
-
-	var versionFlg bool
-	var tokenOnlyFlg bool
-	const usageVersion   = "Display Version"
-	const diffTokensOnly   = "Diff tokens only"
-
-	flag.BoolVar(&versionFlg, "version", false, usageVersion)
-	flag.BoolVar(&versionFlg, "v", false, usageVersion + " (shorthand)")
-	flag.BoolVar(&tokenOnlyFlg, "tokens", false, diffTokensOnly)
-	flag.BoolVar(&tokenOnlyFlg, "t", false, diffTokensOnly + " (shorthand)")
-	flag.Usage = usageIs  // Display app usage
-
-	flag.Parse()
-
-	if versionFlg {
-		fmt.Printf("Version %s\n", "2019-02-04  v1.2.5")
-		os.Exit(0)
-	}
-
-	if len(os.Args) < 2 {
-		usageIs()  // Display usage
-		log.Fatalf("Missing parameters\n")
-	}
+// Release instance
+// Close the file and release the structure.
+func Close(v *VDFFile) (err error) {
+	err = v.f.Close()
+	v  = nil
+	return err
+}
