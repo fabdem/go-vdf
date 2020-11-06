@@ -7,7 +7,7 @@ import (
     // "io/ioutil"
     // "log"
 	"errors"
-	"runtime"
+	// "runtime"
     // "strings"
 	"os"
 	"unicode/utf8"
@@ -132,7 +132,7 @@ func UTFReader(f *os.File, encodingName string) (r io.Reader, encodingFound stri
 		//}
 	}
 
-	// get encodingFound by name
+	// get encoding by name
 	enc, err := htmlindex.Get(encodingName)
 	encodingFound = encodingName
 	if err != nil {

@@ -8,29 +8,30 @@ import (
 	// "bufio"
 	// "bytes"
 	// "flag"
+	"errors"
 	"fmt"
 	"io"
-	"errors"
 	// "io/ioutil"
-	// "log"
+	"log"
 	"os"
+	"time"
 )
 
 type VDFFile struct {
-	name        	string
-	f           	*os.File
-	encoding    	string
-	logWriter   	io.Writer
-	debug       	bool
-	cParenth    	[]byte
-	cDbleQuote  	[]byte
-	cDbleSlash  	[]byte
-	cBackSlash  	[]byte
-	cLineFeed   	[]byte
-	cCarriageRet	[]byte
-	cCRLF       	[]byte
-	cTab        	[]byte
-	bom         	[]byte
+	name         string
+	f            *os.File
+	encoding     string
+	logWriter	 io.Writer
+	debug        bool
+	cParenth     []byte
+	cDbleQuote   []byte
+	cDbleSlash   []byte
+	cBackSlash   []byte
+	cLineFeed    []byte
+	cCarriageRet []byte
+	cCRLF        []byte
+	cTab         []byte
+	bom          []byte
 }
 
 // Create a new instance
@@ -39,8 +40,8 @@ type VDFFile struct {
 func New(fileName string) (*VDFFile, error) {
 
 	// validate parameter
-	if fileName == nil {
-		return nil,  errors.New(fmt.Sprintf("File name cannot be empty"))
+	if fileName == "" {
+		return nil, errors.New(fmt.Sprintf("File name cannot be empty"))
 	}
 
 	v := &VDFFile{} // Create instance
@@ -72,6 +73,25 @@ func New(fileName string) (*VDFFile, error) {
 // Close the file and release the structure.
 func Close(v *VDFFile) (err error) {
 	err = v.f.Close()
-	v  = nil
+	v = nil
 	return err
+}
+
+// SetDebug - traces errors if it's set to true.
+func (v *VDFFile) SetDebug(debug bool, logWriter io.Writer) {
+	v.debug = debug
+	v.logWriter = logWriter
+}
+
+// Log writer
+func (v *VDFFile) log(a interface{}) {
+	if v.debug {
+		if v.logWriter != nil {
+			timestamp := time.Now().Format(time.RFC3339)
+			msg := fmt.Sprintf("%v: %v", timestamp, a)
+			fmt.Fprintln(v.logWriter, msg)
+		} else {
+			log.Println(a)
+		}
+	}
 }
