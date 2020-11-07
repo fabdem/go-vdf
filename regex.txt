@@ -39,4 +39,12 @@
 // Version qui ne tient pas compte des escaped "
 (?mi)^\s*?"[a-z\d_]{1,}"\s*?".*?"
 // avec des groupes et on ignore le debut
-(?mi)(?:^\s*)("[a-z\d_]{1,}")\s*?(".*?")
+(?mi)(?:^\s*)("[a-z\d_:#\$]{1,}")\s*?"[^"\\]*(?:\\.[^"\\]*)*"
+
+
+https://stackoverflow.com/questions/5695240/php-regex-to-ignore-escaped-quotes-within-quotes
+"[^"\\]*(?:\\.[^"\\]*)*"
+
+// avec groupe et sans quotes
+(?mi)(?:^\s*")([a-z\d_:#\$]{1,})(?:"\s*")([^"\\]*(?:\\.[^"\\]*)*)"
+
