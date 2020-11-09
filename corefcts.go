@@ -73,18 +73,20 @@ func (v *VDFFile) SkipHeader(buf []byte) (res []byte) {
 func (v *VDFFile) Parse(buf []byte) (m_token map[string]string, err error) {
 	v.log(fmt.Sprintf("Parse()"))
 
-	var pairPattern = regexp.MustCompile(`(?mi)(?:^\s*)("[a-z\d_:#\$]{1,}")\s*?"[^"\\]*(?:\\.[^"\\]*)*"`)
+	// var pairPattern = regexp.MustCompile(`(?mi)(?:^\s*")([a-z\d_:#\$]{1,})(?:"\s*")([^"\\]*(?:\\.[^"\\]*)*)"`)
+	var pairPattern = regexp.MustCompile(`(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`)
 	
 	if pairPattern == nil {
 		return m_token, errors.New(fmt.Sprintf("Parse() - no match"))
 	}
-	
+
+	kvPairs := pairPattern.FindAllSubmatch(buf, -1)
+
 	m_token = make(map[string]string)
 	
-	kvPairs := pairPattern.FindAllSubmatch(buf, -1)
 	for _, kv := range kvPairs {
-		key := string(kv[0])
-		value := string(kv[1])
+		key := string(kv[1])    // kv[0] is teh full match
+		value := string(kv[2])
 		m_token[key] = value
 	}
 	return m_token, nil
