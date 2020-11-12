@@ -70,14 +70,14 @@ func (v *VDFFile) SkipHeader(buf []byte) (res []byte) {
 
 
 // Parse all key/values in a map
-func (v *VDFFile) Parse(buf []byte) (m_token map[string]string, err error) {
-	v.log(fmt.Sprintf("Parse()"))
+func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) {
+	v.log(fmt.Sprintf("ParseInMap()"))
 
 	// var pairPattern = regexp.MustCompile(`(?mi)(?:^\s*")([a-z\d_:#\$]{1,})(?:"\s*")([^"\\]*(?:\\.[^"\\]*)*)"`)
 	var pairPattern = regexp.MustCompile(`(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`)
 	
 	if pairPattern == nil {
-		return m_token, errors.New(fmt.Sprintf("Parse() - no match"))
+		return m_token, errors.New(fmt.Sprintf("ParseInMap() - no match"))
 	}
 
 	kvPairs := pairPattern.FindAllSubmatch(buf, -1)
@@ -85,15 +85,34 @@ func (v *VDFFile) Parse(buf []byte) (m_token map[string]string, err error) {
 	m_token = make(map[string]string)
 	
 	for _, kv := range kvPairs {
-		key := string(kv[1])    // kv[0] is teh full match
+		key := string(kv[1])    // kv[0] is the full match
 		value := string(kv[2])
 		m_token[key] = value
 	}
 	return m_token, nil
 }
 
+// Parse all key/values in a slice
+func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
+	v.log(fmt.Sprintf("ParseInSlice()"))
 
-//
+	// var pairPattern = regexp.MustCompile(`(?mi)(?:^\s*")([a-z\d_:#\$]{1,})(?:"\s*")([^"\\]*(?:\\.[^"\\]*)*)"`)
+	var pairPattern = regexp.MustCompile(`(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`)
+	
+	if pairPattern == nil {
+		return s_token, errors.New(fmt.Sprintf("ParseinSlice() - no match"))
+	}
+
+	kvPairs := pairPattern.FindAllSubmatch(buf, -1)
+	
+	for _, kv := range kvPairs {
+		s_token = append(s_token, []string{string(kv[1]), string(kv[2])}) // kv[0] is the full match
+	}
+	return s_token, nil
+}
+
+
+// Returns encoding of current file
 func (v *VDFFile) GetEncoding() (string) {
 	v.log("GetEncoding()")
 	return v.encoding
