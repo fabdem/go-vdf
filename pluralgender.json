@@ -1,0 +1,195 @@
+{
+	"languages": [
+	{
+		"name": "brazilian",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"}
+		]
+	},
+	{
+		"name": "bulgarian",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"},
+			{"gender":"#|n|#"}
+		]
+	},
+	{
+		"name": "czech",
+		"plural": 4,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|n|#"},
+			{"gender":"#|ma|#"},
+			{"gender":"#|mi|#"}
+		]
+	},
+	{
+		"name": "danish",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|n|#"},
+			{"gender":"#|c|#"}
+		]
+	},
+	{
+		"name": "dutch",
+		"plural": 2
+	},
+	{
+		"name": "finnish",
+		"plural": 2
+	},
+	{
+		"name": "french",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"}
+		]
+	},
+	{
+		"name": "german",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"},
+			{"gender":"#|n|#"}
+		]
+	},
+	{
+		"name": "greek",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"},
+			{"gender":"#|n|#"}
+		]
+	},
+	{
+		"name": "hungarian",
+		"plural": 2
+	},
+	{
+		"name": "italian",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"}
+		]
+	},
+	{
+		"name": "japanese",
+		"plural": 0
+	},
+	{
+		"name": "korean",
+		"plural": 0
+	},
+	{
+		"name": "koreana",
+		"plural": 0
+	},
+	{
+		"name": "norwegian",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"},
+			{"gender":"#|n|#"}
+		]
+	},
+	{
+		"name": "portuguese",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"}
+		]
+	},
+	{
+		"name": "polish",
+		"plural": 4,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|n|#"},
+			{"gender":"#|mp|#"},
+			{"gender":"#|ma|#"},
+			{"gender":"#|mi|#"}
+		]
+	},
+	{
+		"name": "romanian",
+		"plural": 3,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"}
+		]
+	},
+	{
+		"name": "russian",
+		"plural": 4,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"},
+			{"gender":"#|n|#"}
+		]
+	},
+	{
+		"name": "schinese",
+		"plural": 2
+	},
+	{
+		"name": "spanish",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"}
+		]
+	},
+	{
+		"name": "latam",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"}
+		]
+	},
+	{
+		"name": "swedish",
+		"plural": 2,
+		"genders": [
+			{"gender":"#|n|#"},
+			{"gender":"#|c|#"}
+		]
+	},
+	{
+		"name": "tchinese",
+		"plural": 2
+	},
+	{
+		"name": "thai",
+		"plural": 0
+	},
+	{
+		"name": "turkish",
+		"plural": 2
+	},
+	{
+		"name": "ukrainian",
+		"plural": 4,
+		"genders": [
+			{"gender":"#|f|#"},
+			{"gender":"#|m|#"},
+			{"gender":"#|n|#"}
+		]
+	},
+	{
+		"name": "vietnamese",
+		"plural": 0
+	}
+	]
+}

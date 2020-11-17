@@ -1,4 +1,5 @@
 package vdfloc
+// Publicly available high level functions
 
 import (
 	// "bufio"
@@ -12,9 +13,6 @@ import (
 	// "os"
 	"strings"
 )
-
-// Publicly available high level functions
-
 
 
 // Return a slice with all the token names.
@@ -34,5 +32,23 @@ func (v *VDFFile) GetTokenNames() (s []string, err error) {
 		s = append(s, tkn[0])
 	}
 		
-	return s, nil	
+	return s, err	
 }
+
+
+// GetTokenInMap()
+// Return a map of all token/content.
+func (v *VDFFile) GetTokenInMap() (s map[string]string, err error) {
+
+	buf, err := v.ReadSource()
+	if err != nil {
+		return s, err
+	}
+	
+	res := v.SkipHeader(buf)
+	
+	tokens, err = v.ParseInMap(res)
+		
+	return res, err	
+}
+
