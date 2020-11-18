@@ -34,6 +34,9 @@ type VDFFile struct {
 	bom          []byte
 }
 
+var	g_debug bool
+var	g_logWriter io.Writer
+
 // Create a new instance
 // - lookup path to p4 command
 // - Returns instance and error code
@@ -48,7 +51,8 @@ func New(fileName string) (*VDFFile, error) {
 
 	var err error
 	v.name = fileName
-	v.debug = false // default
+	v.debug = g_debug
+	v.logWriter = g_logWriter
 
 	// Open the file for reading
 	f, err := os.Open(fileName)
@@ -77,10 +81,13 @@ func Close(v *VDFFile) (err error) {
 	return err
 }
 
-// SetDebug - traces errors if it's set to true.
-func (v *VDFFile) SetDebug(debug bool, logWriter io.Writer) {
-	v.debug = debug
-	v.logWriter = logWriter
+// SetDebug()
+//
+// Enable or disable log for all instances created from this point
+// Traces errors if it's set to true.
+func SetDebug(debug bool, logWriter io.Writer) {
+	g_debug = debug
+	g_logWriter = logWriter
 }
 
 // Log writer

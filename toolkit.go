@@ -11,7 +11,7 @@ import (
 	// "io/ioutil"
 	// "log"
 	// "os"
-	"strings"
+	// "strings"
 )
 
 
@@ -26,7 +26,7 @@ func (v *VDFFile) GetTokenNames() (s []string, err error) {
 	
 	res := v.SkipHeader(buf)
 	
-	tokens, err = v.ParseInSlice(res)
+	tokens, err := v.ParseInSlice(res)
 
 	for _,tkn := range tokens {
 		s = append(s, tkn[0])
@@ -37,6 +37,7 @@ func (v *VDFFile) GetTokenNames() (s []string, err error) {
 
 
 // GetTokenInMap()
+//
 // Return a map of all token/content.
 func (v *VDFFile) GetTokenInMap() (s map[string]string, err error) {
 
@@ -47,8 +48,8 @@ func (v *VDFFile) GetTokenInMap() (s map[string]string, err error) {
 	
 	res := v.SkipHeader(buf)
 	
-	tokens, err = v.ParseInMap(res)
+	tokens, err := v.ParseInMap(res)
 		
-	return res, err	
+	return tokens, err	
 }
 

@@ -6,39 +6,39 @@ import (
 	// "bytes"
 	// "flag"
 	// "errors"
-	// "fmt"
+	"fmt"
 	// "io"
 	// "io/ioutil"
 	// "log"
 	// "os"
 	"strings"
-	"vdfloc/config"
+	"go-vdfloc/config"
 
 )
 
-typedef t_PluralGender struct {
-	suffix: string
-	check: interface{}
-	}
+// type t_PluralGender struct {
+// 	suffix	string
+// 	check	interface{}
+// 	}
 
-var m_pluralGender []t_PluralGender
+var m_pluralGender map[string]interface{}
 
 var suffixesPluralGender []string
 var pluralTag 	string
 var genderTags 	[]string
-var json config
+var json *config.Config
 
 const defaultJson = "pluralgender.json"
 
 
 func init() {
 
-	suffixesPluralGender := []string {	":p", // plural
+	suffixesPluralGender = []string {	":p", // plural
 										":n", // gender sender
 										":g", // gender receiver
 									}  
 
-	genderTags := []string {"#|f|#",
+	genderTags = []string {"#|f|#",
 							"#|n|#",
 							"#|c|#",
 							"#|m|#",
@@ -48,7 +48,7 @@ func init() {
 						}
 						
 
-	pluralTag := "#|#"
+	pluralTag = "#|#"
 	
 	m_pluralGender = map[string]interface{} {
 			":p": checkPlural,
@@ -57,7 +57,7 @@ func init() {
 		}
 
 	// Try to load the default config file
-	json, err := config.New(defaultJson)
+	json, _ = config.New(defaultJson)
 
 }
 
@@ -73,7 +73,7 @@ func init() {
 //
 func LoadJsonConf(f string) (err error) {
 
-	json, err := config.New(f)
+	json, err = config.New(f)
 	
 	return err
 }	
@@ -87,41 +87,51 @@ func LoadJsonConf(f string) (err error) {
 //		- token value
 //		- Language name
 // 	Output:
-//		- issue == nil if no error
+//		- issue == nil if no syntax issue
+//		- err
 //
 func checkPlural(k string, v string, lang string) (res string, err error) {
 	n, err := json.GetPlural(lang)
 	if err != nil  {
 		return res, err
 	}
+	
+	if n > 0 { n-- }  // e.g. 2 form plural -> 1 separator
+	
 	if ct := strings.Count(v, suffixesPluralGender[0]); ct != n {
-		res = fmt.Sprintf("Expected number of plural forms: %d - found: %d - token: %s - value: %s", n, ct, k, v)
+		res = fmt.Sprintf("Expected number of plural forms: %d - found: %d", n, ct)
 	}
 	return res, err
 }
 
 // checkGenderSender()
 //
-// Check gender syntax in a sender token value.
+// Check gender syntax in a sender token value. Needs either 1 of tag list for that language.
 // 	Input:
 //		- token name
 //		- token value
 //		- Language name
 // 	Output:
-//		- issue == nil if no error
+//		- issue == nil if no syntax issue
+//		- err
 //
 func checkGenderSender(k string, v string, lang string) (res string, err error) {
-	list, err := json.GetGender(lang)
+	l, err := json.GetGenders(lang)
 	if err != nil {
 		return res, err
 	}
 
-	for gender := range genderTags {
+	var list string  // Convert slice to a single string
+	for _, val := range l { 
+		list += val + ","
+	}
+
+	for _, gender := range genderTags {
 		
 		ct := strings.Count(v, gender)
 		
-		if ok:= strings.Contains(list,gender);(ct != 1 || !ok)&&(ct != 0 || ok) { // bad syntax cases
-			res = fmt.Sprintf("Error with gender form %s - expected %s - token: %s - value: %s", gender, list, k, v)
+		if ok := strings.Contains(list,gender);(ct != 1 || !ok)&&(ct != 0 || ok) { // bad syntax cases
+			res = fmt.Sprintf("Error with gender form: %s - expected only one of: %s", gender, list)
 			break
 		}
 	}	
@@ -131,19 +141,55 @@ func checkGenderSender(k string, v string, lang string) (res string, err error) 
 
 // checkGenderReceiver()
 //
-// Check gender syntax in a receiver token value.
+// Check gender syntax in a receiver token value. Needs 1 of each tag for that language.
 // 	Input:
 //		- token name
 //		- token value
 //		- Language name
 // 	Output:
-//		- issue == nil if no error
+//		- issue == nil if no syntax issue
+//		- err
 //
-func checkGenderReceiver(k string, v string, lang string) (res string) {
+func checkGenderReceiver(k string, v string, lang string) (res string, err error) {
+	l, err := json.GetGenders(lang)
+	if err != nil {
+		return res, err
+	}
+
+	var list string  // Convert slice to a single string
+	for _, val := range l { 
+		list += (val + ",")
+	}
+
+	fmt.Printf("checkGenderReceiver list:%s len=%d\n",list, len(l))
+	fmt.Printf("checkGenderReceiver lang:%s\n",lang)
+	
+	var total int
+	
+	for _, gender := range genderTags {
+		
+		ct := strings.Count(v, gender)
+		
+		if ok := strings.Contains(list,gender);(ct != 1 || !ok)&&(ct != 0 || ok) { // bad syntax cases
+			res = fmt.Sprintf("Error with gender form: %s - expected one of each: %s", gender, list)
+			break
+		} else {
+			if ok && ct == 1 {
+				total++
+			}
+		}
+	}
+
+	fmt.Printf("checkGenderReceiver total:%d\n",total)
+	
+	if total != len(l) {  // If we don't have one of each -> syntax problem
+		res = fmt.Sprintf("Error with gender form - expected %s - token: %s - value: %s", list, k, v)
+	}
+	
+	return res, err
 
 
 }
-
 
 
 // FilterPlrGdr()
@@ -159,12 +205,12 @@ func (v *VDFFile) FilterPlrGdr(in []string) (out []string) {
 	for _,tkn := range in {
 		for _,sufx := range suffixesPluralGender {
 			if strings.HasSuffix(tkn, sufx) {
-				out := append(out,tkn)
+				out = append(out,tkn)
 			}
 		}
 	}
 	return out
-)
+}
 
 
 // CheckPlrlGendrTokenVal()
@@ -176,18 +222,19 @@ func (v *VDFFile) FilterPlrGdr(in []string) (out []string) {
 //		- token value
 //		- Language name
 // 	Output:
-//		- issue == nil if no error
+//		- issue == nil if no syntax issue
+//		- err
 //
-func (v *VDFFile) CheckPlrlGendrTokenVal(tkn string, val string, language string) (issue string) {
+func (v *VDFFile) CheckPlrlGendrTokenVal(tkn string, val string, language string) (issue string, err error) {
 	v.log(fmt.Sprintf("CheckPlrlGendrTokenVal(%s, %s, %s)", tkn, val, language))
 	
 	if idx := strings.LastIndex(tkn,":"); idx > 0 {
 		if f,ok := m_pluralGender[tkn[idx:]]; ok {
-			issue = f(tkn, val, language)  // Check syntax
+			issue, err = f.(func(string, string, string)(string, error))(tkn, val, language)  // Check syntax
+			// bOK,bArrayRes := record.fctOpen.(func (string) (bool,[]byte))(openingTag)    
 		}
-	}
-	
-	return issue
+	}	
+	return issue, err
 }
 
 
