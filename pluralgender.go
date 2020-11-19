@@ -28,7 +28,7 @@ var pluralTag 	string
 var genderTags 	[]string
 var json *config.Config
 
-const defaultJson = "pluralgender.json"
+const defaultJson = "pluralgender.json"  // located along with the exe or bin
 
 
 func init() {
@@ -98,8 +98,8 @@ func checkPlural(k string, v string, lang string) (res string, err error) {
 	
 	if n > 0 { n-- }  // e.g. 2 form plural -> 1 separator
 	
-	if ct := strings.Count(v, suffixesPluralGender[0]); ct != n {
-		res = fmt.Sprintf("Expected number of plural forms: %d - found: %d", n, ct)
+	if ct := strings.Count(v, pluralTag); ct != n {
+		res = fmt.Sprintf("Expected number of plural forms: %d - found: %d", n+1, ct)
 	}
 	return res, err
 }
@@ -126,15 +126,29 @@ func checkGenderSender(k string, v string, lang string) (res string, err error) 
 		list += val + ","
 	}
 
+	fmt.Printf("checkGenderSender lang: %s tkn: %s val: %s list:%s len=%d\n",lang, k, v, list, len(l))
+	
+	var total int
+	
 	for _, gender := range genderTags {
 		
 		ct := strings.Count(v, gender)
+		fmt.Printf("	checkGenderSender gender:%s ct: %d\n",gender, ct)
 		
-		if ok := strings.Contains(list,gender);(ct != 1 || !ok)&&(ct != 0 || ok) { // bad syntax cases
+		if ok := strings.Contains(list,gender);(ct > 1) || (ct == 1 && !ok) { // bad syntax cases
 			res = fmt.Sprintf("Error with gender form: %s - expected only one of: %s", gender, list)
 			break
+		} else {
+			if ct >0 { // found one good match
+				total++
+			}
 		}
-	}	
+	}
+
+	if len(l) > 0 && total != 1 {  // If we have not found exactly 1 match when there are genders
+		res = fmt.Sprintf("Error with gender form - expected %s", list)
+	}
+	
 	return res, err
 }
 
@@ -183,7 +197,7 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 	fmt.Printf("checkGenderReceiver total:%d\n",total)
 	
 	if total != len(l) {  // If we don't have one of each -> syntax problem
-		res = fmt.Sprintf("Error with gender form - expected %s - token: %s - value: %s", list, k, v)
+		res = fmt.Sprintf("Error with gender form - expected %s", list)
 	}
 	
 	return res, err
