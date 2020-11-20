@@ -99,7 +99,7 @@ func checkPlural(k string, v string, lang string) (res string, err error) {
 	if n > 0 { n-- }  // e.g. 2 form plural -> 1 separator
 	
 	if ct := strings.Count(v, pluralTag); ct != n {
-		res = fmt.Sprintf("Expected number of plural forms: %d - found: %d", n+1, ct)
+		res = fmt.Sprintf("Expected number of plural forms: %d - found: %d", n + 1, ct + 1)
 	}
 	return res, err
 }
@@ -136,7 +136,11 @@ func checkGenderSender(k string, v string, lang string) (res string, err error) 
 		fmt.Printf("	checkGenderSender gender:%s ct: %d\n",gender, ct)
 		
 		if ok := strings.Contains(list,gender);(ct > 1) || (ct == 1 && !ok) { // bad syntax cases
-			res = fmt.Sprintf("Error with gender form: %s - expected only one of: %s", gender, list)
+			if len(list) > 0 {
+				res = fmt.Sprintf("Error with gender form: %s - expected only one of: %s", gender, list)
+			} else {
+				res = fmt.Sprintf("Error with gender form: %s - no gender expected", gender)
+			}
 			break
 		} else {
 			if ct >0 { // found one good match
@@ -185,7 +189,11 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 		ct := strings.Count(v, gender)
 		
 		if ok := strings.Contains(list,gender);(ct != 1 || !ok)&&(ct != 0 || ok) { // bad syntax cases
-			res = fmt.Sprintf("Error with gender form: %s - expected one of each: %s", gender, list)
+			if len(list) > 0 {
+				res = fmt.Sprintf("Error with gender form: %s - expected one of each: %s", gender, list)
+			} else {
+				res = fmt.Sprintf("Error with gender form: %s - no gender expected", gender)
+			}
 			break
 		} else {
 			if ok && ct == 1 {

@@ -31,7 +31,7 @@ var (
 const utf8ProbeLen = 4 * 32 * 1024 // probe length: if this length utf8 then the rest of the file is utf8
 
 // https://ompp.sourceforge.io/src/go.openmpp.org/ompp/helper/utf8.go Utf8Reader
-// UTFReader return a reader to transform file content to utf-8.
+// UTFReader returns a reader to transform file content to utf-8.
 //
 // 		Keep the original source mechanics. Modifications are:
 //			- Added 1 output param: input file encoding detected.
