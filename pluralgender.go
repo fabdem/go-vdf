@@ -126,14 +126,11 @@ func checkGenderSender(k string, v string, lang string) (res string, err error) 
 		list += val + ","
 	}
 
-	fmt.Printf("checkGenderSender lang: %s tkn: %s val: %s list:%s len=%d\n",lang, k, v, list, len(l))
-	
 	var total int
 	
 	for _, gender := range genderTags {
 		
 		ct := strings.Count(v, gender)
-		fmt.Printf("	checkGenderSender gender:%s ct: %d\n",gender, ct)
 		
 		if ok := strings.Contains(list,gender);(ct > 1) || (ct == 1 && !ok) { // bad syntax cases
 			if len(list) > 0 {
@@ -178,9 +175,6 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 	for _, val := range l { 
 		list += (val + ",")
 	}
-
-	fmt.Printf("checkGenderReceiver list:%s len=%d\n",list, len(l))
-	fmt.Printf("checkGenderReceiver lang:%s\n",lang)
 	
 	var total int
 	
@@ -201,8 +195,6 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 			}
 		}
 	}
-
-	fmt.Printf("checkGenderReceiver total:%d\n",total)
 	
 	if total != len(l) {  // If we don't have one of each -> syntax problem
 		res = fmt.Sprintf("Error with gender form - expected %s", list)
