@@ -131,7 +131,7 @@
 	},
 	{
 		"name": "russian",
-		"plural": 4,
+		"plural": 5,
 		"genders": [
 			{"gender":"#|f|#"},
 			{"gender":"#|m|#"},
@@ -180,7 +180,7 @@
 	},
 	{
 		"name": "ukrainian",
-		"plural": 4,
+		"plural": 5,
 		"genders": [
 			{"gender":"#|f|#"},
 			{"gender":"#|m|#"},
