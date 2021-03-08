@@ -210,7 +210,8 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 
 // checkGenderSenderPlural()
 //
-// Check gender syntax in a sender token value with plural. ????: Needs either 1 of tag list for that language.
+// Check gender syntax in a sender token value with plural. Needs as many gender
+// tags valid for the language as they are plurals.
 // 	Input:
 //		- token name
 //		- token value
@@ -219,15 +220,47 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 //		- issue == nil if no syntax issue
 //		- err
 //
+//	E.g. "Valve_TestPluralGenders_Noun1:np"    "#|m|#Trésor#|m|#Trésors"
+//
 func checkGenderSenderPlural(k string, v string, lang string) (res string, err error) {
-	// WIP
+	l, err := json.GetGenders(lang) // Get the list of gender tags
+	if err != nil {
+		return res, err
+	}
+
+	nbPluralExpected, err := json.GetPlural(lang) // Get the number of plurals
+	if err != nil  {
+		return res, err
+	}
+
+	var list string  // Convert slice into a single string
+	for _, val := range l {
+		list += val + ","
+	}
+
+	pluralCount := 0
+
+	for _, gender := range genderTags {
+		if ct := strings.Count(v, gender); ct > 0 && !strings.Contains(list,gender) {
+			res = fmt.Sprintf("Error with gender/plural form: this tag was unexpected %s", gender)
+			break
+		} else {
+			pluralCount += ct
+		}
+	}
+
+	if pluralCount != nbPluralExpected  {  // If incorrect number of plural forms ->  error
+		res = fmt.Sprintf("Error with gender/plural forms - expected %d, counted %d", nbPluralExpected, pluralCount)
+	}
+
 	return res, err
 }
 
 
 // checkGenderReceiverplural()
 //
-// Check gender syntax in a receiver token value with plural. ?????: Needs 1 of each tag for that language.
+// Check gender syntax in a receiver token value with plural.
+// Each gender list must be repeated as many time as there are plurals for the language.
 // 	Input:
 //		- token name
 //		- token value
@@ -235,6 +268,8 @@ func checkGenderSenderPlural(k string, v string, lang string) (res string, err e
 // 	Output:
 //		- issue == nil if no syntax issue
 //		- err
+//
+// E.g. "Valve_TestPluralGenders_Adjective1:gp" "#|m|#peu Commun#|f|#peu Commune#|m|#peu Communs#|f|#peu Communes"
 //
 func checkGenderReceiverPlural(k string, v string, lang string) (res string, err error) {
 	// WIP
