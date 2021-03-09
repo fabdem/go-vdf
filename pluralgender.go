@@ -183,18 +183,18 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 
 	var total int
 
-	for _, gender := range genderTags {
+	for _, gender := range genderTags {   // check all gender tag possible
 
 		ct := strings.Count(v, gender)
 
-		if ok := strings.Contains(list,gender);(ct != 1 || !ok)&&(ct != 0 || ok) { // bad syntax cases
+		if ok := strings.Contains(list,gender);(ct != 1 || !ok) && (ct != 0 || ok) { // bad syntax cases
 			if len(list) > 0 {
 				res = fmt.Sprintf("Error with gender form: %s - expected one of each: %s", gender, list)
 			} else {
 				res = fmt.Sprintf("Error with gender form: %s - no gender expected", gender)
 			}
 			break
-		} else {
+		} else { // (ct == 1 && ok) || (ct ==0 && !ok)
 			if ok && ct == 1 {
 				total++
 			}
@@ -272,7 +272,39 @@ func checkGenderSenderPlural(k string, v string, lang string) (res string, err e
 // E.g. "Valve_TestPluralGenders_Adjective1:gp" "#|m|#peu Commun#|f|#peu Commune#|m|#peu Communs#|f|#peu Communes"
 //
 func checkGenderReceiverPlural(k string, v string, lang string) (res string, err error) {
-	// WIP
+	l, err := json.GetGenders(lang) // Get the list of gender tags
+	if err != nil {
+		return res, err
+	}
+
+	var list string  // Convert slice to a single string
+	for _, val := range l {
+		list += (val + ",")
+	}
+
+	nbPluralExpected, err := json.GetPlural(lang) // Get the number of plurals
+	if err != nil  {
+		return res, err
+	}
+
+	// 1st check presence of the right tags and the right number of times
+	for _, gender := range genderTags {
+		ct := strings.Count(v, gender)
+		if ok := strings.Contains(list,gender);(ct != nbPluralExpected || !ok) && (ct != 0 || ok) { // bad syntax cases
+			if len(list) > 0 {
+				res = fmt.Sprintf("Error with gender form: %s - expected %d (plural forms) of each: %s", gender, nbPluralExpected, list)
+			} else {
+				res = fmt.Sprintf("Error with gender form: %s - no gender expected", gender) // ??? schinese no gender but plural?
+			}
+			break
+		}
+	}
+
+	// 2nd check that the tags are in the right order
+	for p := nbPluralExpected; p > 0 ; p--  {
+		fmt.Sprintf(" %d", p) // Juste pour compiler
+	}
+
 	return res, err
 }
 
