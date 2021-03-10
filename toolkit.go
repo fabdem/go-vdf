@@ -24,7 +24,7 @@ func (v *VDFFile) GetTokenNames() (s []string, err error) {
 
 	for _,tkn := range tokens {
 		// Skip token names begining with [english].
-		if strings.HasPrefix(tkn[0], "[english]") {	s = append(s, tkn[0]) }
+		if !strings.HasPrefix(tkn[0], "[english]") {	s = append(s, tkn[0]) }
 	}
 		
 	return s, err	

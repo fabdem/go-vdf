@@ -2,15 +2,7 @@ package vdfloc
 // Publicly available high level functions
 
 import (
-	// "bufio"
-	// "bytes"
-	// "flag"
-	// "errors"
 	"fmt"
-	// "io"
-	// "io/ioutil"
-	// "log"
-	// "os"
 	"strings"
 	"go-vdfloc/config"
 
@@ -43,9 +35,9 @@ func init() {
 
 	// Defines each token suffixe and its associated check function
 	m_pluralGender = map[string]interface{} {
-			":p":  checkPlural,								// plural
-			":n":  checkGenderSender,					// gender sender
-			":g":  checkGenderReceiver,				// gender receiver
+			":p":  checkPlural,					// plural
+			":n":  checkGenderSender,			// gender sender
+			":g":  checkGenderReceiver,			// gender receiver
 			":np": checkGenderSenderPlural,		// gender sender with plural
 			":gp": checkGenderReceiverPlural,	// gender receiver with plural
 		}

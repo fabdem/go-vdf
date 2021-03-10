@@ -8,13 +8,7 @@ import (
 	// "bufio"
 	// "bytes"
 	// "flag"
-	"errors"
-	"fmt"
-	"io"
 	// "io/ioutil"
-	"log"
-	"os"
-	"time"
 )
 
 type VDFFile struct {
