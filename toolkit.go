@@ -2,21 +2,15 @@ package vdfloc
 // Publicly available high level functions
 
 import (
-	// "bufio"
-	// "bytes"
-	// "flag"
-	// "errors"
-	// "fmt"
-	// "io"
-	// "io/ioutil"
-	// "log"
-	// "os"
-	// "strings"
+	"strings"
 )
 
-
+// GetTokenNames()
+//
 // Return a slice with all the token names.
-// Token names ending with:
+// Eexcludes the ones prefixed with [english]. They appear 
+// in some of the loc files holding the english source but are of no use.
+// 
 func (v *VDFFile) GetTokenNames() (s []string, err error) {
 
 	buf, err := v.ReadSource()
@@ -29,7 +23,8 @@ func (v *VDFFile) GetTokenNames() (s []string, err error) {
 	tokens, err := v.ParseInSlice(res)
 
 	for _,tkn := range tokens {
-		s = append(s, tkn[0])
+		// Skip token names begining with [english].
+		if strings.HasPrefix(tkn[0], "[english]") {	s = append(s, tkn[0]) }
 	}
 		
 	return s, err	
@@ -39,6 +34,7 @@ func (v *VDFFile) GetTokenNames() (s []string, err error) {
 // GetTokenInMap()
 //
 // Return a map of all token/content.
+//
 func (v *VDFFile) GetTokenInMap() (s map[string]string, err error) {
 
 	buf, err := v.ReadSource()
