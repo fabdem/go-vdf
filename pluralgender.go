@@ -287,24 +287,51 @@ func checkGenderReceiverPlural(k string, v string, lang string) (res string, err
 		return res, err
 	}
 
-	// 1st check presence of the right tags and the right number of times
-	for _, gender := range genderTags {
-		ct := strings.Count(v, gender)
-		if ok := strings.Contains(list,gender);(ct != nbPluralExpected || !ok) && (ct != 0 || ok) { // bad syntax cases
-			if len(list) > 0 {
-				res = fmt.Sprintf("Error with gender form: %s - expected %d (plural forms) of each: %s", gender, nbPluralExpected, list)
-			} else {
-				res = fmt.Sprintf("Error with gender form: %s - no gender expected", gender) // ??? schinese no gender but plural?
+	if nbPluralExpected > 0 && len(l) == 0 {
+		// Exception: if plurals but no gender: form separator is the one used for plurals
+		nbPluralExpected--  // e.g. 2 form plural -> 1 separator
+	
+		if ct := strings.Count(v, pluralTag); ct != nbPluralExpected {
+			res = fmt.Sprintf("Expected number of plural forms: %d - found: %d", nbPluralExpected + 1, ct + 1)
+		}
+		
+	} else {
+		// 1st - check presence of the right tags and the right number of times
+		for _, gender := range genderTags {
+			ct := strings.Count(v, gender)
+			if ok := strings.Contains(list,gender);(ct != nbPluralExpected || !ok) && (ct != 0 || ok) { // bad syntax cases
+				if len(list) > 0 {
+					res = fmt.Sprintf("Error with gender form: %s - expected %d (plural forms) of each: %s", gender, nbPluralExpected, list)
+				} else {
+					res = fmt.Sprintf("Error with gender form: %s - no gender expected", gender) // No gender expected but found gender tags...
+				}
+				break
 			}
-			break
+		}
+	
+		// 2nd - check that the tags are in the right order
+		// We already checked that the right number of the right gender tags are in there.  
+		// They must be organised in as many groups as there are plurals. Each group must have all
+		// gender tags (no specific order required).
+		newGroupIdx := 0
+		for p := nbPluralExpected; p > 0 ; p--  {
+			lastIdxInGroup := 0
+			for _, tag := range l {
+				if idx := strings.Index(v[newGroupIdx:],tag); idx == -1 {
+					// tag not found - Should not happen
+					res = fmt.Sprintf("Error with gender/plural form: missing tag %s", tag)
+					return res, err
+				} else {
+					if idx < newGroupIdx {
+						res = fmt.Sprintf("Error with gender/plural form: out of order gender tags in gender group nb %d: %s", p, tag)
+						return res, err
+					}
+					if idx > lastIdxInGroup { lastIdxInGroup = idx }  // Keep track of the idx of last tag in group
+				}
+			}
+			newGroupIdx = lastIdxInGroup // Let's check next group of gender tags
 		}
 	}
-
-	// 2nd check that the tags are in the right order
-	for p := nbPluralExpected; p > 0 ; p--  {
-		fmt.Sprintf(" %d", p) // Juste pour compiler
-	}
-
 	return res, err
 }
 
