@@ -25,13 +25,6 @@ const defaultJson = "pluralgender.json"  // located along with the exe or bin
 
 func init() {
 
-	// suffixesPluralGender = []string {
-	// 									":p",  // plural
-	// 									":n",  // gender sender
-	// 									":g",  // gender receiver
-	// 									":np", // gender sender plural
-	// 									":gp", // gender receiver plural
-	// 								}
 
 	// Defines each token suffixe and its associated check function
 	m_pluralGender = map[string]interface{} {
@@ -204,6 +197,7 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 //
 // Check gender syntax in a sender token value with plural. Needs as many gender
 // tags valid for the language as they are plurals.
+// If there are no genders but plurals (e.g. schinese) plurals are separated with the plural tag. 
 // 	Input:
 //		- token name
 //		- token value
@@ -225,26 +219,36 @@ func checkGenderSenderPlural(k string, v string, lang string) (res string, err e
 		return res, err
 	}
 
-	var list string  // Convert slice into a single string
-	for _, val := range l {
-		list += val + ","
-	}
+	if nbPluralExpected > 0 && len(l) == 0 {
+		// Exception: if plurals but no gender: form separator is the one used for plurals
+		nbPluralExpected--  // e.g. 2 form plural -> 1 separator
+	
+		if ct := strings.Count(v, pluralTag); ct != nbPluralExpected {
+			res = fmt.Sprintf("Error with gender/plural form: found %d plural forms, while expecting %d separated wiht a  plural tag.", ct + 1, nbPluralExpected + 1)
+			return res, err     // Syntax issue detected
+		}	
+	} else {
 
-	pluralCount := 0
-
-	for _, gender := range genderTags {
-		if ct := strings.Count(v, gender); ct > 0 && !strings.Contains(list,gender) {
-			res = fmt.Sprintf("Error with gender/plural form: this tag was unexpected %s", gender)
-			break
-		} else {
-			pluralCount += ct
+		var list string  // Convert slice into a single string
+		for _, val := range l {
+			list += val + ","
+		}
+	
+		pluralCount := 0
+	
+		for _, gender := range genderTags {
+			if ct := strings.Count(v, gender); ct > 0 && !strings.Contains(list,gender) {
+				res = fmt.Sprintf("Error with gender/plural form: this tag was unexpected %s", gender)
+				break
+			} else {
+				pluralCount += ct
+			}
+		}
+	
+		if pluralCount != nbPluralExpected  {  // If incorrect number of plural forms ->  error
+			res = fmt.Sprintf("Error with gender/plural forms - counted %d while expecting %d", pluralCount, nbPluralExpected)
 		}
 	}
-
-	if pluralCount != nbPluralExpected  {  // If incorrect number of plural forms ->  error
-		res = fmt.Sprintf("Error with gender/plural forms - expected %d, counted %d", nbPluralExpected, pluralCount)
-	}
-
 	return res, err
 }
 
@@ -253,76 +257,92 @@ func checkGenderSenderPlural(k string, v string, lang string) (res string, err e
 //
 // Check gender syntax in a receiver token value with plural.
 // Each gender list must be repeated as many time as there are plurals for the language.
+// If there are no genders but plurals (e.g. schinese) plurals are separated with the plural tag. 
 // 	Input:
 //		- token name
 //		- token value
 //		- Language name
 // 	Output:
-//		- issue == nil if no syntax issue
-//		- err
+//		- issue	== nil if no syntax issue
+//		- err	!= nil is processing error
 //
 // E.g. "Valve_TestPluralGenders_Adjective1:gp" "#|m|#peu Commun#|f|#peu Commune#|m|#peu Communs#|f|#peu Communes"
 //
 func checkGenderReceiverPlural(k string, v string, lang string) (res string, err error) {
-	l, err := json.GetGenders(lang) // Get the list of gender tags
+	lgGenderTags, err := json.GetGenders(lang) // Get the list of gender tags
 	if err != nil {
-		return res, err
+		return res, err  // Processing error
 	}
 
 	var list string  // Convert slice to a single string
-	for _, val := range l {
+	for _, val := range lgGenderTags {
 		list += (val + ",")
 	}
 
 	nbPluralExpected, err := json.GetPlural(lang) // Get the number of plurals
 	if err != nil  {
-		return res, err
+		return res, err  // Processing error
 	}
 
-	if nbPluralExpected > 0 && len(l) == 0 {
+	if nbPluralExpected > 0 && len(lgGenderTags) == 0 {
 		// Exception: if plurals but no gender: form separator is the one used for plurals
 		nbPluralExpected--  // e.g. 2 form plural -> 1 separator
 	
 		if ct := strings.Count(v, pluralTag); ct != nbPluralExpected {
-			res = fmt.Sprintf("Expected number of plural forms: %d - found: %d", nbPluralExpected + 1, ct + 1)
+			res = fmt.Sprintf("Error with gender/plural form: found %d plural forms, while expecting %d separated wiht a  plural tag.", ct + 1, nbPluralExpected + 1)
+			return res, err     // Syntax issue detected
 		}
 		
 	} else {
 		// 1st - check presence of the right tags and the right number of times
+		//       and build an array of tag indexes in the token string for later order check.
+
+		arrayIdx := make([][]int, nbPluralExpected + 1)
+		for i := range arrayIdx {	arrayIdx[i] = make([]int, len(lgGenderTags) + 2) }		
+		
+		g := 1
 		for _, gender := range genderTags {
 			ct := strings.Count(v, gender)
-			if ok := strings.Contains(list,gender);(ct != nbPluralExpected || !ok) && (ct != 0 || ok) { // bad syntax cases
+			if ok := strings.Contains(list,gender);(ct != nbPluralExpected || !ok) && (ct != 0 || ok) {
+				// bad syntax cases: wrong tag present or correct tag but wrong number of instances
 				if len(list) > 0 {
-					res = fmt.Sprintf("Error with gender form: %s - expected %d (plural forms) of each: %s", gender, nbPluralExpected, list)
+					res = fmt.Sprintf("Error with gender/plural form: %s - found %d plural forms while expecting %d of each gender group: %s", ct, gender, nbPluralExpected, list)
 				} else {
-					res = fmt.Sprintf("Error with gender form: %s - no gender expected", gender) // No gender expected but found gender tags...
+					res = fmt.Sprintf("Error with gender/plural form: %s - no gender expected", gender) // No gender expected but found gender tags...
 				}
-				break
+				return res, err     // Syntax issue detected
+			} else {
+				if ok {
+					// If tag valid for this language
+					// Let's capture the position of each tag in the string
+					str := v
+					for p := 1; p <= nbPluralExpected; p++ {
+						idx := strings.Index(str, gender)
+						arrayIdx[p][g] = idx + (len(v) - len(str))
+						str = str[idx + len (gender):]
+					}
+					g++ // next column
+				}
 			}
 		}
 	
 		// 2nd - check that the tags are in the right order
-		// We already checked that the right number of the right gender tags are in there.  
-		// They must be organised in as many groups as there are plurals. Each group must have all
-		// gender tags (no specific order required).
-		newGroupIdx := 0
-		for p := nbPluralExpected; p > 0 ; p--  {
-			lastIdxInGroup := 0
-			for _, tag := range l {
-				if idx := strings.Index(v[newGroupIdx:],tag); idx == -1 {
-					// tag not found - Should not happen
-					res = fmt.Sprintf("Error with gender/plural form: missing tag %s", tag)
-					return res, err
-				} else {
-					if idx < newGroupIdx {
-						res = fmt.Sprintf("Error with gender/plural form: out of order gender tags in gender group nb %d: %s", p, tag)
-						return res, err
-					}
-					if idx > lastIdxInGroup { lastIdxInGroup = idx }  // Keep track of the idx of last tag in group
+		// 		 We already checked that the right number of the right gender tags are in there.  
+		// 		 Tags must be organised in as many groups as there are plurals. Each group must have all
+		// 		 gender tags (no specific order required).
+		
+		for p := 1; p <= nbPluralExpected; p++ {
+			for g := 1; g <= len(lgGenderTags); g++ {
+				if arrayIdx[p][g] < arrayIdx[p - 1][len(lgGenderTags)+1] {
+					// Error order incorrect. Provides pointer to where the error is.
+					res = fmt.Sprintf("Error with gender/plural form: incorrect order plural form: %d, gender tag: %s", p, lgGenderTags[g - 1])
+					return res, err     // Syntax issue detected
+				}
+				if arrayIdx[p][g] > arrayIdx[p][len(lgGenderTags)+1] {
+					arrayIdx[p][len(lgGenderTags)+1] = arrayIdx[p][g] // keep track of highest index 
 				}
 			}
-			newGroupIdx = lastIdxInGroup // Let's check next group of gender tags
-		}
+		}		
 	}
 	return res, err
 }
@@ -338,10 +358,12 @@ func checkGenderReceiverPlural(k string, v string, lang string) (res string, err
 //
 func (v *VDFFile) FilterPlrGdr(in []string) (out []string) {
 	v.log(fmt.Sprintf("FilterPlrGdr()"))
+
 	for _,tkn := range in {
 		for sufx,_ := range m_pluralGender {
 			if strings.HasSuffix(tkn, sufx) {
 				out = append(out,tkn)
+				break
 			}
 		}
 	}
@@ -352,13 +374,13 @@ func (v *VDFFile) FilterPlrGdr(in []string) (out []string) {
 // CheckPlrlGendrTokenVal()
 //
 // Check plural and gender syntax of a token value.
-// If it's not a plural or gender token just ignore (return empty string).
+// If it's not a plural or gender token just ignore (return nil string).
 // 	Input:
 //		- token name
 //		- token value
 //		- Language name
 // 	Output:
-//		- issue == nil if no syntax issue
+//		- issue == nil if no syntax issue or not a gender/plural variant
 //		- err
 //
 func (v *VDFFile) CheckPlrlGendrTokenVal(tkn string, val string, language string) (issue string, err error) {

@@ -5,10 +5,12 @@ package vdfloc
 //	Compatible with utf8 and utf16BE encoding
 
 import (
-	// "bufio"
-	// "bytes"
-	// "flag"
-	// "io/ioutil"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"time"
 )
 
 type VDFFile struct {
