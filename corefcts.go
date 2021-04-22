@@ -50,11 +50,15 @@ func (v *VDFFile) ReadSource() (buf []byte, err error) {
 
 // SkipHeader() Skip vdf "header" by removing it from the buffer.
 // Returns the same buffer but without header.
+// And a very unlikely Error
 //
-func (v *VDFFile) SkipHeader(buf []byte) (res []byte) {
+func (v *VDFFile) SkipHeader(buf []byte) (res []byte, err error) {
 	v.log("SkipHeader()")
 
-	var getPattern = regexp.MustCompile(`(?mi)^\s*"[a-z]{1,15}"\s*\{`)
+	getPattern,err := regexp.Compile(`(?mi)^\s*"[a-z]{1,15}"\s*\{`)
+	if err != nil {
+		return res, errors.New(fmt.Sprintf("Err in regEx: %v",err))
+	}
 
 	res = buf
 	for {
@@ -66,7 +70,7 @@ func (v *VDFFile) SkipHeader(buf []byte) (res []byte) {
 			break
 		}
 	}
-	return res
+	return res, nil
 }
 
 
@@ -75,16 +79,16 @@ func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) 
 	v.log(fmt.Sprintf("ParseInMap()"))
 
 	// var pairPattern = regexp.MustCompile(`(?mi)(?:^\s*")([a-z\d_:#\$]{1,})(?:"\s*")([^"\\]*(?:\\.[^"\\]*)*)"`)
-	var pairPattern = regexp.MustCompile(`(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`)
-	
-	if pairPattern == nil {
-		return m_token, errors.New(fmt.Sprintf("ParseInMap() - no match"))
+	pairPattern,err := regexp.Compile(`(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`)
+
+	if err != nil {
+		return m_token, errors.New(fmt.Sprintf("Err in regEx: %v",err))
 	}
 
 	kvPairs := pairPattern.FindAllSubmatch(buf, -1)
 
 	m_token = make(map[string]string)
-	
+
 	for _, kv := range kvPairs {
 		key := string(kv[1])    // kv[0] is the full match
 		value := string(kv[2])
@@ -98,14 +102,14 @@ func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 	v.log(fmt.Sprintf("ParseInSlice()"))
 
 	// var pairPattern = regexp.MustCompile(`(?mi)(?:^\s*")([a-z\d_:#\$]{1,})(?:"\s*")([^"\\]*(?:\\.[^"\\]*)*)"`)
-	var pairPattern = regexp.MustCompile(`(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`)
-	
-	if pairPattern == nil {
-		return s_token, errors.New(fmt.Sprintf("ParseinSlice() - no match"))
+	pairPattern,err := regexp.Compile(`(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`)
+
+	if err != nil {
+		return s_token, errors.New(fmt.Sprintf("Err in regEx: %v",err))
 	}
 
 	kvPairs := pairPattern.FindAllSubmatch(buf, -1)
-	
+
 	for _, kv := range kvPairs {
 		s_token = append(s_token, []string{string(kv[1]), string(kv[2])}) // kv[0] is the full match
 	}
@@ -117,5 +121,4 @@ func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 func (v *VDFFile) GetEncoding() (string) {
 	v.log("GetEncoding()")
 	return v.encoding
-}	
-	
+}
