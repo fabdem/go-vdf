@@ -2,7 +2,10 @@ package vdfloc
 // Publicly available high level functions
 
 import (
+	"errors"
+	"fmt"
 	"strings"
+	"path/filepath"
 )
 
 // GetTokenNames()
@@ -53,4 +56,27 @@ func (v *VDFFile) GetTokenInMap() (s map[string]string, err error) {
 	tokens, err := v.ParseInMap(res)
 
 	return tokens, err
+}
+
+
+
+// GetEnFileName()
+//
+// Returns the name of the english file (source) corresponding to the loc file name passed as a parameter.
+//  err != nil if loc file name is empty
+//  A loc file name is formed like this xxxx_<language>.yyy or <language>.yyy
+//
+func GetEnFileName(locFileName string) (enFileName string, err error) {
+
+	if len(locFileName) == 0 { return "", errors.New(fmt.Sprintf("Paramer shoudn't be empty.")) }
+
+	extension := filepath.Ext(locFileName)
+	base := strings.TrimRight(filepath.Base(locFileName),extension)
+
+	if lastUnderscore := strings.LastIndex(base, "_"); lastUnderscore == -1 {
+		return "english" + extension, nil
+	} else
+	{
+		return base[0:lastUnderscore] + "_english" + extension, nil
+	}
 }
