@@ -11,60 +11,63 @@ import (
 	"log"
 	"os"
 	"time"
+	"path/filepath"
 )
 
 type VDFFile struct {
-	name         string
+	pathAndName  string			// loc file path and name
+	fileName		string
 	f            *os.File
 	encoding     string
 	logWriter	 io.Writer
 	debug        bool
-	cParenth     []byte
-	cDbleQuote   []byte
-	cDbleSlash   []byte
-	cBackSlash   []byte
-	cLineFeed    []byte
-	cCarriageRet []byte
-	cCRLF        []byte
-	cTab         []byte
-	bom          []byte
+	// cParenth     []byte
+	// cDbleQuote   []byte
+	// cDbleSlash   []byte
+	// cBackSlash   []byte
+	// cLineFeed    []byte
+	// cCarriageRet []byte
+	// cCRLF        []byte
+	// cTab         []byte
+	// bom          []byte
 }
 
 var	g_debug bool
 var	g_logWriter io.Writer
 
 // Create a new instance
-// - lookup path to p4 command
+// - In: File name and path
 // - Returns instance and error code
-func New(fileName string) (*VDFFile, error) {
+func New(filePathAndName string) (*VDFFile, error) {
 
 	// validate parameter
-	if fileName == "" {
+	if filePathAndName == "" {
 		return nil, errors.New(fmt.Sprintf("File name cannot be empty"))
 	}
 
 	v := &VDFFile{} // Create instance
 
 	var err error
-	v.name = fileName
+	v.pathAndName = filePathAndName
+	v.fileName = filepath.Base(filePathAndName)
 	v.debug = g_debug
 	v.logWriter = g_logWriter
 
 	// Open the file for reading
-	f, err := os.Open(fileName)
+	f, err := os.Open(filePathAndName)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Unable to open file %s - %v", fileName, err))
+		return nil, errors.New(fmt.Sprintf("Unable to open file %s - %v", filePathAndName, err))
 	}
 
 	v.f = f
 	// Default encoding: utf8 no bom
-	v.cParenth = []byte{'{'}
-	v.cDbleQuote = []byte{'"'}
-	v.cDbleSlash = []byte{'/', '/'}
-	v.cTab = []byte{'\t'}
-	v.cBackSlash = []byte{'\\'}
-	v.cLineFeed, v.cCarriageRet = []byte{'\n'}, []byte{'\r'}
-	v.cCRLF = append([]byte{'\r'}, []byte{'\n'}...)
+	// v.cParenth = []byte{'{'}
+	// v.cDbleQuote = []byte{'"'}
+	// v.cDbleSlash = []byte{'/', '/'}
+	// v.cTab = []byte{'\t'}
+	// v.cBackSlash = []byte{'\\'}
+	// v.cLineFeed, v.cCarriageRet = []byte{'\n'}, []byte{'\r'}
+	// v.cCRLF = append([]byte{'\r'}, []byte{'\n'}...)
 
 	return v, nil
 }

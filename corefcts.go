@@ -21,12 +21,12 @@ import (
 // Store the file in a slice for further procesing.
 //
 func (v *VDFFile) ReadSource() (buf []byte, err error) {
-	v.log(fmt.Sprintf("ReadSource() - %s", v.name))
+	v.log(fmt.Sprintf("ReadSource() - %s", v.pathAndName))
 
 	// Open file
-	f, err := os.Open(v.name)
+	f, err := os.Open(v.pathAndName)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("ReadSource() - Can't open file %s - %v", v.name, err))
+		return nil, errors.New(fmt.Sprintf("ReadSource() - Can't open file %s - %v", v.pathAndName, err))
 	}
 
 	// Make a Reader

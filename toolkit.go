@@ -59,6 +59,18 @@ func (v *VDFFile) GetTokenInMap() (s map[string]string, err error) {
 }
 
 
+// GetEnFileName()
+//
+// Returns the name of the english file (source) corresponding to the current loc file name.
+//  err != nil if loc file name is empty
+//  A loc file name is formed like this xxxx_<language>.yyy or <language>.yyy
+//
+func (v *VDFFile)GetEnFileName() (enFileName string, err error) {
+	v.log(fmt.Sprintf("GetEnFileName(%s)", v.fileName))
+	enFileName, err = GetEnFileName(v.fileName)
+	return enFileName, err
+}
+
 
 // GetEnFileName()
 //
