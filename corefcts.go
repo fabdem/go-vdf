@@ -1,17 +1,10 @@
 package vdfloc
 
 import (
-	// "bufio"
-	// "bytes"
-	// "flag"
-	"errors"
 	"fmt"
-	// "io"
 	"io/ioutil"
-	// "log"
 	"os"
 	"regexp"
-
 )
 
 // ReadSource() Read entire source in a buffer.
@@ -26,21 +19,21 @@ func (v *VDFFile) ReadSource() (buf []byte, err error) {
 	// Open file
 	f, err := os.Open(v.pathAndName)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("ReadSource() - Can't open file %s - %v", v.pathAndName, err))
+		return nil, fmt.Errorf("ReadSource() - Can't open file %s - %v", v.pathAndName, err)
 	}
 
 	// Make a Reader
 	// unicodeReader, v.encoding, err := UTFReader(f, "")
 	unicodeReader, enc, err := UTFReader(f, "")
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("ReadSource() - %v", err))
+		return nil, fmt.Errorf("ReadSource() - %v", err)
 	}
 	v.encoding = enc
 
 	// Read, decode (if needed) and store file content in a slice (utf8 no bom)
 	buf, err = ioutil.ReadAll(unicodeReader)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("ReadSource() - Fail to read file %v", err))
+		return nil, fmt.Errorf("ReadSource() - Fail to read file %v", err)
 	}
 
 	f.Close()
@@ -57,7 +50,7 @@ func (v *VDFFile) SkipHeader(buf []byte) (res []byte, err error) {
 
 	getPattern,err := regexp.Compile(`(?mi)^\s*"[a-z]{1,15}"\s*\{`)
 	if err != nil {
-		return res, errors.New(fmt.Sprintf("Err in regEx: %v",err))
+		return res, fmt.Errorf("Err in regEx: %v",err)
 	}
 
 	res = buf
@@ -78,11 +71,18 @@ func (v *VDFFile) SkipHeader(buf []byte) (res []byte, err error) {
 func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) {
 	v.log(fmt.Sprintf("ParseInMap()"))
 
+	var regex string
+	if !v.sourceTkn { // filter out [english] tokens
+		regex = `(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
+	} else { 	// Keep [english] tokens
+		regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
+	}
+
 	// var pairPattern = regexp.MustCompile(`(?mi)(?:^\s*")([a-z\d_:#\$]{1,})(?:"\s*")([^"\\]*(?:\\.[^"\\]*)*)"`)
-	pairPattern,err := regexp.Compile(`(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`)
+	pairPattern,err := regexp.Compile(regex)
 
 	if err != nil {
-		return m_token, errors.New(fmt.Sprintf("Err in regEx: %v",err))
+		return m_token, fmt.Errorf("Err in regEx: %v",err)
 	}
 
 	kvPairs := pairPattern.FindAllSubmatch(buf, -1)
@@ -101,11 +101,18 @@ func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) 
 func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 	v.log(fmt.Sprintf("ParseInSlice()"))
 
+	var regex string
+	if !v.sourceTkn { // filter out [english] tokens
+		regex = `(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
+	} else { 	// Keep [english] tokens
+		regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
+	}
+
 	// var pairPattern = regexp.MustCompile(`(?mi)(?:^\s*")([a-z\d_:#\$]{1,})(?:"\s*")([^"\\]*(?:\\.[^"\\]*)*)"`)
-	pairPattern,err := regexp.Compile(`(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`)
+	pairPattern,err := regexp.Compile(regex)
 
 	if err != nil {
-		return s_token, errors.New(fmt.Sprintf("Err in regEx: %v",err))
+		return s_token, fmt.Errorf("Err in regEx: %v",err)
 	}
 
 	kvPairs := pairPattern.FindAllSubmatch(buf, -1)

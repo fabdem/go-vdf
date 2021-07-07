@@ -2,7 +2,6 @@ package vdfloc
 // Publicly available high level functions
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"path/filepath"
@@ -80,7 +79,7 @@ func (v *VDFFile)GetEnFileName() (enFileName string, err error) {
 //
 func GetEnFileName(locFileName string) (enFileName string, err error) {
 
-	if len(locFileName) == 0 { return "", errors.New(fmt.Sprintf("Paramer shoudn't be empty.")) }
+	if len(locFileName) == 0 { return "", fmt.Errorf("Paramer shoudn't be empty.") }
 
 	extension := filepath.Ext(locFileName)
 	base := strings.TrimRight(filepath.Base(locFileName),extension)

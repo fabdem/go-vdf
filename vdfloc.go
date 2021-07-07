@@ -5,7 +5,6 @@ package vdfloc
 //	Compatible with utf8 and utf16BE encoding
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -20,6 +19,7 @@ type VDFFile struct {
 	f            *os.File
 	encoding     string
 	logWriter	 io.Writer
+	sourceTkn			bool 			// Define whether we keep the [english] tokens or not
 	debug        bool
 	// cParenth     []byte
 	// cDbleQuote   []byte
@@ -42,7 +42,7 @@ func New(filePathAndName string) (*VDFFile, error) {
 
 	// validate parameter
 	if filePathAndName == "" {
-		return nil, errors.New(fmt.Sprintf("File name cannot be empty"))
+		return nil, fmt.Errorf("File name cannot be empty")
 	}
 
 	v := &VDFFile{} // Create instance
@@ -52,11 +52,12 @@ func New(filePathAndName string) (*VDFFile, error) {
 	v.fileName = filepath.Base(filePathAndName)
 	v.debug = g_debug
 	v.logWriter = g_logWriter
+	v.sourceTkn = false // default behavior: we ignore tokens names including "[english]"
 
 	// Open the file for reading
 	f, err := os.Open(filePathAndName)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Unable to open file %s - %v", filePathAndName, err))
+		return nil, fmt.Errorf("Unable to open file %s - %v", filePathAndName, err)
 	}
 
 	v.f = f
@@ -78,6 +79,21 @@ func Close(v *VDFFile) (err error) {
 	err = v.f.Close()
 	v = nil
 	return err
+}
+
+// Set the flag to keep token names with [english] tag
+func (v *VDFFile) SetKeepSourceTokens() {
+	v.sourceTkn = true
+}
+
+// Reset the flag to filter out token names with [english] tag
+func (v *VDFFile) ResetKeepSourceTokens() {
+	v.sourceTkn = false
+}
+
+// Read the flag to keep (true) or filter (flase) token names with [english] tag
+func (v *VDFFile) GetKeepSourceTokenFlag()(bool) {
+	return v.sourceTkn
 }
 
 // SetDebug()
