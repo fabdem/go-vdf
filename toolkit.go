@@ -36,6 +36,37 @@ func (v *VDFFile) GetTokenNames() (s []string, err error) {
 }
 
 
+// GetStringsWithConditionalStatement()
+//
+// Return a slice with the details of all strings with conditional statements (e.g.[$WIN32]).
+// Excludes the ones prefixed with [english].
+// Returns a slice with key, value, conditional statement, comment.
+//
+func (v *VDFFile) GetStringsWithConditionalStatement() (s [][]string, err error) {
+
+	buf, err := v.ReadSource()
+	if err != nil {
+		return s, err
+	}
+
+	res, err := v.SkipHeader(buf)
+	if err != nil {
+		return s, err
+	}
+
+	tokens, err := v.ParseInSlice(res)
+
+	for _,tkn := range tokens {
+		// Skip token names begining with [english] and the ones with no cond statements.
+		if !strings.HasPrefix(tkn[0], "[english]") && len(tkn[2]) > 0 {
+				s = append(s, []string{tkn[0], tkn[1], tkn[2], tkn[3]})
+		}
+	}
+
+	return s, err
+}
+
+
 // GetTokenInMap()
 //
 // Return a map of all token/content.

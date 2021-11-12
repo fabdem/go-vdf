@@ -66,7 +66,8 @@ func (v *VDFFile) SkipHeader(buf []byte) (res []byte, err error) {
 	return res, nil
 }
 
-
+// ParseInMap()
+//
 // Parse all key/values in a map
 func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) {
 	v.log(fmt.Sprintf("ParseInMap()"))
@@ -97,18 +98,23 @@ func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) 
 	return m_token, nil
 }
 
-// Parse all key/values in a slice
+// ParseInSlice()
+//
+// Parse all keys/values/cond statements/comments in a slice
+// 		E.g. "a_key"	"a value" [$WIN32]	// A comment
+//
 func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 	v.log(fmt.Sprintf("ParseInSlice()"))
 
 	var regex string
 	if !v.sourceTkn { // filter out [english] tokens
-		regex = `(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
+		// regex = `(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
+		regex = `(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
 	} else { 	// Keep [english] tokens
-		regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
+		// regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
+		regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
 	}
 
-	// var pairPattern = regexp.MustCompile(`(?mi)(?:^\s*")([a-z\d_:#\$]{1,})(?:"\s*")([^"\\]*(?:\\.[^"\\]*)*)"`)
 	pairPattern,err := regexp.Compile(regex)
 
 	if err != nil {
@@ -118,13 +124,15 @@ func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 	kvPairs := pairPattern.FindAllSubmatch(buf, -1)
 
 	for _, kv := range kvPairs {
-		s_token = append(s_token, []string{string(kv[1]), string(kv[2])}) // kv[0] is the full match
+		s_token = append(s_token, []string{string(kv[1]), string(kv[2]), string(kv[3]), string(kv[4])}) // kv[0] is the full match
 	}
 	return s_token, nil
 }
 
-
+// GetEncoding()
+//
 // Returns encoding of current file
+//
 func (v *VDFFile) GetEncoding() (string) {
 	v.log("GetEncoding()")
 	return v.encoding
