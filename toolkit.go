@@ -59,7 +59,7 @@ func (v *VDFFile) GetStringsWithConditionalStatement() (s [][]string, err error)
 	for _,tkn := range tokens {
 		// Skip token names begining with [english] and the ones with no cond statements.
 		if !strings.HasPrefix(tkn[0], "[english]") && len(tkn[2]) > 0 {
-				s = append(s, []string{tkn[0], tkn[1], tkn[2], tkn[3]})
+				s = append(s, []string{tkn[0], tkn[1], tkn[2], strings.TrimRight(tkn[3], "\r\n")})
 		}
 	}
 
