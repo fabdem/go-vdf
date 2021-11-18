@@ -102,6 +102,11 @@ func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) 
 //
 // Parse all keys/values/cond statements/comments in a slice
 // 		E.g. "a_key"	"a value" [$WIN32]	// A comment
+//		slice[0]: "a_key"
+//		slice[1]: "a value"
+//		slice[2]: [$WIN32]
+//		slice[3]: // A comment
+//		slice[4]: the entire line except for the leading spaces and tabs "a_key"	"a value" [$WIN32]	// A comment
 //
 func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 	v.log(fmt.Sprintf("ParseInSlice()"))
@@ -124,8 +129,10 @@ func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 	kvPairs := pairPattern.FindAllSubmatch(buf, -1)
 
 	for _, kv := range kvPairs {
-		s_token = append(s_token, []string{string(kv[1]), string(kv[2]), string(kv[3]), string(kv[4])}) // kv[0] is the full match
+		s_token = append(s_token, []string{string(kv[1]), string(kv[2]), string(kv[3]), string(kv[4]), string(kv[0])})
+		// fmt.Printf(">>%s<< >>%s<< >>%s<< >>%s<< >>%s<<\n", string(kv[0]), string(kv[1]), string(kv[2]), string(kv[3]), string(kv[4]))
 	}
+
 	return s_token, nil
 }
 
