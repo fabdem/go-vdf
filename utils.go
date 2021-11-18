@@ -1,14 +1,14 @@
 package vdfloc
 
 import (
-    // "bytes"
-    // "fmt"
-    "io"
-    // "io/ioutil"
-    // "log"
+	// "bytes"
+	// "fmt"
+	"io"
+	// "io/ioutil"
+	// "log"
 	"errors"
 	// "runtime"
-    // "strings"
+	// "strings"
 	"os"
 	"unicode/utf8"
 
@@ -128,7 +128,7 @@ func UTFReader(f *os.File, encodingName string) (r io.Reader, encodingFound stri
 		//if runtime.GOOS == "windows" {
 		//	encodingName = "windows-1252"
 		//} else {
-			encodingName = "UTF8"
+		encodingName = "UTF8"
 		//}
 	}
 
@@ -141,4 +141,3 @@ func UTFReader(f *os.File, encodingName string) (r io.Reader, encodingFound stri
 
 	return transform.NewReader(f, unicode.BOMOverride(enc.NewDecoder())), encodingFound, nil
 }
-

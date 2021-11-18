@@ -9,18 +9,18 @@ import (
 	"io"
 	"log"
 	"os"
-	"time"
 	"path/filepath"
+	"time"
 )
 
 type VDFFile struct {
-	pathAndName  string			// loc file path and name
-	fileName		string
-	f            *os.File
-	encoding     string
-	logWriter	 io.Writer
-	sourceTkn			bool 			// Define whether we keep the [english] tokens or not
-	debug        bool
+	pathAndName string // loc file path and name
+	fileName    string
+	f           *os.File
+	encoding    string
+	logWriter   io.Writer
+	sourceTkn   bool // Define whether we keep the [english] tokens or not
+	debug       bool
 	// cParenth     []byte
 	// cDbleQuote   []byte
 	// cDbleSlash   []byte
@@ -32,8 +32,8 @@ type VDFFile struct {
 	// bom          []byte
 }
 
-var	g_debug bool
-var	g_logWriter io.Writer
+var g_debug bool
+var g_logWriter io.Writer
 
 // Create a new instance
 // - In: File name and path
@@ -92,7 +92,7 @@ func (v *VDFFile) ResetKeepSourceTokens() {
 }
 
 // Read the flag to keep (true) or filter (flase) token names with [english] tag
-func (v *VDFFile) GetKeepSourceTokenFlag()(bool) {
+func (v *VDFFile) GetKeepSourceTokenFlag() bool {
 	return v.sourceTkn
 }
 
