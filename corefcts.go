@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
+	"strings"
 )
 
 // ReadSource() Read entire source in a buffer.
@@ -103,8 +104,8 @@ func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) 
 // Parse all keys/values/cond statements/comments in a slice
 // 		E.g. "a_key"	"a value" [$WIN32]	// A comment
 //		slice[0]: the entire line: "a_key"	"a value" [$WIN32]	// A comment
-//		slice[1]: "a_key"
-//		slice[2]: "a value"
+//		slice[1]: a_key
+//		slice[2]: a value
 //		slice[3]: [$WIN32]
 //		slice[4]: // A comment
 //
@@ -129,11 +130,13 @@ func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 	kvPairs := pairPattern.FindAllSubmatch(buf, -1)
 
 	for _, kv := range kvPairs {
-		s_token = append(s_token, []string{string(kv[0]), string(kv[1]), string(kv[2]), string(kv[3]), string(kv[4])})
+		// fmt.Printf("key=%s\nvalue=%s\nstatement=%s\ncomment=%s\n\n",string(kv[1]), string(kv[2]), strings.TrimRight(string(kv[3]), "\r\n"), strings.TrimRight(string(kv[4]), "\r\n"))
+		s_token = append(s_token, []string{string(kv[0]), string(kv[1]), string(kv[2]), strings.TrimRight(string(kv[3]), "\r\n"), strings.TrimRight(string(kv[4]), "\r\n")})
 	}
 
 	return s_token, nil
 }
+
 
 // GetEncoding()
 //

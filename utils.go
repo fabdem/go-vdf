@@ -1,14 +1,9 @@
 package vdfloc
 
 import (
-	// "bytes"
 	// "fmt"
 	"io"
-	// "io/ioutil"
-	// "log"
 	"errors"
-	// "runtime"
-	// "strings"
 	"os"
 	"unicode/utf8"
 

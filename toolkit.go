@@ -3,7 +3,9 @@ package vdfloc
 // Publicly available high level functions
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"path/filepath"
 	"strings"
 )
@@ -15,6 +17,7 @@ import (
 // in some of the loc files holding the english source but are of no use.
 //
 func (v *VDFFile) GetTokenNames() (s []string, err error) {
+	v.log(fmt.Sprintf("GetTokenNames()"))
 
 	buf, err := v.ReadSource()
 	if err != nil {
@@ -40,11 +43,12 @@ func (v *VDFFile) GetTokenNames() (s []string, err error) {
 
 // GetStringsWithConditionalStatement()
 //
-// Return a slice with the details of all strings with conditional statements (e.g.[$WIN32]).
+// Returns a slice with the details of all strings with conditional statements (e.g.[$WIN32]).
 // Excludes the ones prefixed with [english].
 // Returns a slice with full line minus leading lf/rc/spaces and tabs, key, value, conditional statement, comment.
 //
 func (v *VDFFile) GetStringsWithConditionalStatement() (s [][]string, err error) {
+	v.log(fmt.Sprintf("GetStringsWithConditionalStatement()"))
 
 	buf, err := v.ReadSource()
 	if err != nil {
@@ -57,11 +61,14 @@ func (v *VDFFile) GetStringsWithConditionalStatement() (s [][]string, err error)
 	}
 
 	tokens, err := v.ParseInSlice(res)
+	if err != nil {
+		return s, err
+	}
 
 	for _, tkn := range tokens {
 		// Skip token names begining with [english] and the ones with no cond statements.
-		if !strings.HasPrefix(tkn[0], "[english]") && len(tkn[2]) > 0 {
-			s = append(s, []string{strings.TrimLeft(tkn[0], "\t \r\n"), tkn[1], tkn[2], tkn[3], strings.TrimRight(tkn[4], "\r\n")})
+		if !strings.HasPrefix(tkn[0], "[english]") && len(tkn[3]) > 0 {
+			s = append(s, []string{strings.TrimLeft(tkn[0], "\t \r\n"), tkn[1], tkn[2], tkn[3], tkn[4]})
 		}
 	}
 
@@ -73,6 +80,7 @@ func (v *VDFFile) GetStringsWithConditionalStatement() (s [][]string, err error)
 // Return a map of all token/content.
 //
 func (v *VDFFile) GetTokenInMap() (s map[string]string, err error) {
+	v.log(fmt.Sprintf("GetTokenInMap()"))
 
 	buf, err := v.ReadSource()
 	if err != nil {
@@ -121,4 +129,119 @@ func GetEnFileName(locFileName string) (enFileName string, err error) {
 	} else {
 		return base[0:lastUnderscore] + "_english" + extension, nil
 	}
+}
+
+
+// CheckKeyUnicity()
+//
+// Parse all keys/conditional statements and returns an error if they are non unique
+// plus a list of non unique token keys if any.
+// If err is nil then all is good.
+func (v *VDFFile) CheckKeyUnicity() (list []string, err error) {
+	v.log(fmt.Sprintf("CheckKeyUnicity()"))
+
+	buf, err := v.ReadSource()
+	if err != nil {
+		return list, err
+	}
+
+	res, err := v.SkipHeader(buf)
+	if err != nil {
+		return list, err
+	}
+
+	tokens, err := v.ParseInSlice(res)
+
+	// Move slice in a map and count occurrences
+	// map key is string key + conditional statement
+	s := make(map[string]int)
+
+	for _, tkn := range tokens {
+		s[tkn[1] + tkn[3]]++
+	}
+
+	// Now builds a list of keys for which unicity is broken if any
+	err_flag := false
+	for k, v := range s {
+		if v > 1 {
+			list = append(list, k)
+			err_flag = true
+		}
+	}
+
+	if err_flag {
+		err = errors.New("Non unique key(s)")
+	}
+	return list, err
+}
+
+
+
+// CheckIsolatedConditionalStatements()
+//
+// Search for isolated conditional statements which is an invalid VDF form.
+func (v *VDFFile) CheckIsolatedConditionalStatements() (list []string, err error) {
+	v.log(fmt.Sprintf("CheckIsolatedConditionalStatements()"))
+
+	buf, err := v.ReadSource()
+	if err != nil {
+		return list, err
+	}
+
+	// Look for occurrences of isolated conditional statements
+	regex := `(?mi)^[ \t]*(\[[^\]]*\])`
+	pattern, err := regexp.Compile(regex)
+	vals := pattern.FindAllSubmatch(buf, -1)
+	if err != nil {
+		return list, fmt.Errorf("Err in regEx: %v", err)
+	}
+	err_flag := false
+	for _, v := range vals {
+		list = append(list, string(v[0]))
+		err_flag = true
+	}
+
+	if err_flag {
+		err = errors.New("Isolated conditional statement(s) found.")
+	}
+
+	return list, err
+}
+
+
+
+// CheckMaxKeyLen()
+//
+// Parse all keys and returns an error if they are invalid (longer than autorized maxKeyLen or containing spaces or tabs)
+// plus a list of the offending token keys if any.
+
+func (v *VDFFile) CheckKeyValidity() (list []string, err error) {
+	v.log(fmt.Sprintf("CheckKeyValidity()"))
+
+	buf, err := v.ReadSource()
+	if err != nil {
+		return list, err
+	}
+
+	res, err := v.SkipHeader(buf)
+	if err != nil {
+		return list, err
+	}
+
+	tokens, err := v.ParseInSlice(res)
+
+	// Parse all keys
+	err_flag := false
+	for _, tkn := range tokens {
+		//fmt.Printf("%s %d\n",tkn[1], strings.ContainsAny(tkn[1]," \r\n\t"))
+		if len(tkn[1]) > v.maxKeyLen || strings.ContainsAny(tkn[1]," \r\n\t") {
+			list = append(list, tkn[1])
+			err_flag = true
+		}
+	}
+
+	if err_flag {
+		err = errors.New("Invalid key(s) found.")
+	}
+	return list, err
 }

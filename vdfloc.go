@@ -21,6 +21,7 @@ type VDFFile struct {
 	logWriter   io.Writer
 	sourceTkn   bool // Define whether we keep the [english] tokens or not
 	debug       bool
+	maxKeyLen	int  // Maximum autorised char length of keys
 	// cParenth     []byte
 	// cDbleQuote   []byte
 	// cDbleSlash   []byte
@@ -53,6 +54,7 @@ func New(filePathAndName string) (*VDFFile, error) {
 	v.debug = g_debug
 	v.logWriter = g_logWriter
 	v.sourceTkn = false // default behavior: we ignore tokens names including "[english]"
+	v.maxKeyLen = 80    // characters - default maximum autorised length for keys
 
 	// Open the file for reading
 	f, err := os.Open(filePathAndName)
@@ -94,6 +96,16 @@ func (v *VDFFile) ResetKeepSourceTokens() {
 // Read the flag to keep (true) or filter (flase) token names with [english] tag
 func (v *VDFFile) GetKeepSourceTokenFlag() bool {
 	return v.sourceTkn
+}
+
+// Set max autorised char key length
+func (v *VDFFile) SetMaxKeyLen(val int) {
+	v.maxKeyLen = val
+}
+
+// Read max autorised char key length
+func (v *VDFFile) ReadMaxKeyLen() int {
+	return v.maxKeyLen
 }
 
 // SetDebug()
