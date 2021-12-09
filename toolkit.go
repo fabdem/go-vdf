@@ -134,23 +134,11 @@ func GetEnFileName(locFileName string) (enFileName string, err error) {
 
 // CheckKeyUnicity()
 //
-// Parse all keys/conditional statements and returns an error if they are non unique
-// plus a list of non unique token keys if any.
+// Parse all keys/conditional statements from a slice of tokens (use ParseInSlice())
+// and returns an error if they are non unique plus a list of non unique token keys if any.
 // If err is nil then all is good.
-func (v *VDFFile) CheckKeyUnicity() (list []string, err error) {
+func (v *VDFFile) CheckKeyUnicity(tokens [][]string) (list []string, err error) {
 	v.log(fmt.Sprintf("CheckKeyUnicity()"))
-
-	buf, err := v.ReadSource()
-	if err != nil {
-		return list, err
-	}
-
-	res, err := v.SkipHeader(buf)
-	if err != nil {
-		return list, err
-	}
-
-	tokens, err := v.ParseInSlice(res)
 
 	// Move slice in a map and count occurrences
 	// map key is string key + conditional statement
@@ -179,14 +167,9 @@ func (v *VDFFile) CheckKeyUnicity() (list []string, err error) {
 
 // CheckIsolatedConditionalStatements()
 //
-// Search for isolated conditional statements which is an invalid VDF form.
-func (v *VDFFile) CheckIsolatedConditionalStatements() (list []string, err error) {
+// Search in a byte buffer for isolated conditional statements which is an invalid VDF form.
+func (v *VDFFile) CheckIsolatedConditionalStatements(buf []byte) (list []string, err error) {
 	v.log(fmt.Sprintf("CheckIsolatedConditionalStatements()"))
-
-	buf, err := v.ReadSource()
-	if err != nil {
-		return list, err
-	}
 
 	// Look for occurrences of isolated conditional statements
 	regex := `(?mi)^[ \t]*(\[[^\]]*\])`
@@ -210,25 +193,14 @@ func (v *VDFFile) CheckIsolatedConditionalStatements() (list []string, err error
 
 
 
-// CheckMaxKeyLen()
+// CheckKeyValidity()
 //
-// Parse all keys and returns an error if they are invalid (longer than autorized maxKeyLen or containing spaces or tabs)
+// Parse all keys statements from a slice of tokens (use ParseInSlice())
+// and returns an error if they are invalid (longer than autorized maxKeyLen or containing spaces or tabs)
 // plus a list of the offending token keys if any.
 
-func (v *VDFFile) CheckKeyValidity() (list []string, err error) {
+func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error) {
 	v.log(fmt.Sprintf("CheckKeyValidity()"))
-
-	buf, err := v.ReadSource()
-	if err != nil {
-		return list, err
-	}
-
-	res, err := v.SkipHeader(buf)
-	if err != nil {
-		return list, err
-	}
-
-	tokens, err := v.ParseInSlice(res)
 
 	// Parse all keys
 	err_flag := false
