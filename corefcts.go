@@ -73,12 +73,7 @@ func (v *VDFFile) SkipHeader(buf []byte) (res []byte, err error) {
 func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) {
 	v.log(fmt.Sprintf("ParseInMap()"))
 
-	var regex string
-	if !v.sourceTkn { // filter out [english] tokens
-		regex = `(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
-	} else { // Keep [english] tokens
-		regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
-	}
+	regex := `(?mi)^\s*"([a-z\d_:#\$\[\]!&\|]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
 
 	// var pairPattern = regexp.MustCompile(`(?mi)(?:^\s*")([a-z\d_:#\$]{1,})(?:"\s*")([^"\\]*(?:\\.[^"\\]*)*)"`)
 	pairPattern, err := regexp.Compile(regex)
@@ -94,7 +89,9 @@ func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) 
 	for _, kv := range kvPairs {
 		key := string(kv[1]) // kv[0] is the full match
 		value := string(kv[2])
-		m_token[key] = value
+		if !strings.HasPrefix(key, "[english]") || v.sourceTkn { // Add token if key doesn't start with [english] or we want to capture everything
+			m_token[key] = value
+		}
 	}
 	return m_token, nil
 }
@@ -112,14 +109,9 @@ func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) 
 func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 	v.log(fmt.Sprintf("ParseInSlice()"))
 
-	var regex string
-	if !v.sourceTkn { // filter out [english] tokens
-		// regex = `(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
-		regex = `(?mi)^\s*"([a-z\d_:#\$]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
-	} else { // Keep [english] tokens
-		// regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
-		regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
-	}
+	// regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
+	// regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
+	regex := `(?mi)^\s*"([a-z\d_:#\$\[\]!&\|]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
 
 	pairPattern, err := regexp.Compile(regex)
 
@@ -131,7 +123,9 @@ func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 
 	for _, kv := range kvPairs {
 		// fmt.Printf("key=%s\nvalue=%s\nstatement=%s\ncomment=%s\n\n",string(kv[1]), string(kv[2]), strings.TrimRight(string(kv[3]), "\r\n"), strings.TrimRight(string(kv[4]), "\r\n"))
-		s_token = append(s_token, []string{string(kv[0]), string(kv[1]), string(kv[2]), strings.TrimRight(string(kv[3]), "\r\n"), strings.TrimRight(string(kv[4]), "\r\n")})
+		if !strings.HasPrefix(string(kv[1]), "[english]") || v.sourceTkn { // Add token if key doesn't start with [english] or we want to capture everything
+			s_token = append(s_token, []string{string(kv[0]), string(kv[1]), string(kv[2]), strings.TrimRight(string(kv[3]), "\r\n"), strings.TrimRight(string(kv[4]), "\r\n")})
+		}
 	}
 
 	return s_token, nil
