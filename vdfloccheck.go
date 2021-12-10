@@ -70,7 +70,7 @@ func main() {
 	checkFlags.Parse(os.Args[1:])
 
 	if versionFlg {
-		fmt.Printf("Version %s\n", "2021-12  v1.0.5")
+		fmt.Printf("Version %s\n", "2021-12  v1.0.6")
 		os.Exit(0)
 	}
 
@@ -146,7 +146,7 @@ func main() {
 	var listWrongVal []string
 	err_flag := false
 	for _, tkn := range tokens {
-		fmt.Printf("%s\n",strings.ToUpper(tkn[2]))
+		// fmt.Printf("%s\n",strings.ToUpper(tkn[2]))
 		if strings.ToUpper(tkn[2]) == "[EMPTY STRING]" {
 			listWrongVal = append(listWrongVal, tkn[1] + " " + tkn[2])
 			err_flag = true
