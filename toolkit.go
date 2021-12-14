@@ -196,8 +196,10 @@ func (v *VDFFile) CheckIsolatedConditionalStatements(buf []byte) (list []string,
 
 // CheckKeyValidity()
 //
+// Far from being bulletproof since key value pairs detection is based on valid characters. 
+//  
 // Parse all keys statements from a slice of tokens (use ParseInSlice())
-// and returns an error if they are invalid (longer than autorized maxKeyLen or containing spaces or tabs)
+// and returns an error if they are invalid (longer than autorized maxKeyLen or containing spaces/tabs or other non english characters)
 // plus a list of the offending token keys if any.
 
 func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error) {
@@ -205,12 +207,28 @@ func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error)
 
 	// Parse all keys
 	err_flag := false
+
+	var isKeyNameCharValid = regexp.MustCompile(`^[0-9a-zA-Z\[\]\$#_:&!\|.\-\+]+$`).MatchString 
+
 	for _, tkn := range tokens {
-		//fmt.Printf("%s %d\n",tkn[1], strings.ContainsAny(tkn[1]," \r\n\t"))
-		if len(tkn[1]) > v.maxKeyLen || strings.ContainsAny(tkn[1]," \r\n\t") {
+		// fmt.Printf("|1>%s|2>%s|3>%s|4>%s\n",tkn[1],tkn[2],tkn[3],tkn[4] )
+		if len(tkn[1]) > v.maxKeyLen || strings.ContainsAny(tkn[1]," \r\n\t") || !isKeyNameCharValid(tkn[1]){
 			list = append(list, tkn[1])
 			err_flag = true
 		}
+		/* DEBUG if len(tkn[1]) > v.maxKeyLen {
+			list = append(list, "1_" + fmt.Sprintf("%d",(i)) + tkn[1])
+			err_flag = true
+		}
+		if strings.ContainsAny(tkn[1]," \r\n\t"){
+			list = append(list, "2_" + fmt.Sprintf("%d",(i)) + tkn[1])
+			err_flag = true
+		}
+		if !isKeyNameCharValid(tkn[1]){
+			list = append(list, "3_" + fmt.Sprintf("%d",(i)) + tkn[1])
+			err_flag = true
+		} */
+		
 	}
 
 	if err_flag {
@@ -218,3 +236,5 @@ func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error)
 	}
 	return list, err
 }
+
+

@@ -111,7 +111,7 @@ func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 
 	// regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
 	// regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
-	regex := `(?mi)^\s*"([a-z\d_:#\$\[\]!&\|]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
+	regex := `(?mi)^\s*"([a-z\d_:#\$\[\]!&\|.\-\+]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
 
 	pairPattern, err := regexp.Compile(regex)
 
@@ -124,6 +124,44 @@ func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 	for _, kv := range kvPairs {
 		// fmt.Printf("key=%s\nvalue=%s\nstatement=%s\ncomment=%s\n\n",string(kv[1]), string(kv[2]), strings.TrimRight(string(kv[3]), "\r\n"), strings.TrimRight(string(kv[4]), "\r\n"))
 		if !strings.HasPrefix(string(kv[1]), "[english]") || v.sourceTkn { // Add token if key doesn't start with [english] or we want to capture everything
+			s_token = append(s_token, []string{string(kv[0]), string(kv[1]), string(kv[2]), strings.TrimRight(string(kv[3]), "\r\n"), strings.TrimRight(string(kv[4]), "\r\n")})
+		}
+	}
+
+	return s_token, nil
+}
+
+
+// FuzzyParseInSlice()
+//
+// Parse all keys/values/cond statements/comments in a slice
+// Use a less restrictive regex than ParseInSlice() in order to identify VDF structure breaks.
+// To be used to primarily check the validity of a VDF file.  
+// 		E.g. "a_key"	"a value" [$WIN32]	// A comment
+//		slice[0]: the entire line: "a_key"	"a value" [$WIN32]	// A comment
+//		slice[1]: a_key
+//		slice[2]: a value
+//		slice[3]: [$WIN32]
+//		slice[4]: // A comment
+//
+func (v *VDFFile) FuzzyParseInSlice(buf []byte) (s_token [][]string, err error) {
+	v.log(fmt.Sprintf("FuzzyParseInSlice()"))
+
+	regex := `(?mi)(?:[/]{2,}.*)|(?:\s)*"([^"]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
+
+	pairPattern, err := regexp.Compile(regex)
+
+	if err != nil {
+		return s_token, fmt.Errorf("Err in regEx: %v", err)
+	}
+
+	kvPairs := pairPattern.FindAllSubmatch(buf, -1)
+
+	for _, kv := range kvPairs {
+		// fmt.Printf("key=%s\nvalue=%s\nstatement=%s\ncomment=%s\n\n",string(kv[1]), string(kv[2]), strings.TrimRight(string(kv[3]), "\r\n"), strings.TrimRight(string(kv[4]), "\r\n"))
+		// Comment lines are captured as matches so need to filter them:
+		// add token if key is not null and (doesn't start with [english] or we want to capture everything)
+		if len(kv[1]) > 0 && (!strings.HasPrefix(string(kv[1]), "[english]") || v.sourceTkn) { 
 			s_token = append(s_token, []string{string(kv[0]), string(kv[1]), string(kv[2]), strings.TrimRight(string(kv[3]), "\r\n"), strings.TrimRight(string(kv[4]), "\r\n")})
 		}
 	}
