@@ -133,10 +133,54 @@ func GetEnFileName(locFileName string) (enFileName string, err error) {
 }
 
 
+
+// CheckKeyValidity()
+//
+// Tries to detect missing or wrongly escaped double quotes.
+// Has better chances to work with non English files.
+// Not bulletproof since key value pairs detection is based on valid characters. 
+//  
+// Parse all keys statements from a slice of tokens (use FuzzyParseInSlice())
+// and returns an error if they are invalid (longer than autorized maxKeyLen or containing spaces/tabs or other non english characters)
+// plus a list of the offending token keys if any.
+
+func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error) {
+	v.log(fmt.Sprintf("CheckKeyValidity()"))
+
+	// Parse all keys
+	err_flag := false
+
+	var isKeyNameCharValid = regexp.MustCompile(`^[0-9a-zA-Z\[\]\$#_:&!\|.\-\+/ \^']+$`).MatchString 
+
+	for _, tkn := range tokens {
+		// fmt.Printf("|1>%s|2>%s|3>%s|4>%s\n",tkn[1],tkn[2],tkn[3],tkn[4] )
+		if len(tkn[1]) > v.maxKeyLen || !isKeyNameCharValid(tkn[1]){
+			list = append(list, tkn[1])
+			err_flag = true
+		}
+		/* DEBUG if len(tkn[1]) > v.maxKeyLen {
+			list = append(list, "1_" + fmt.Sprintf("%d",(i)) + " " + tkn[1])
+			err_flag = true
+		}
+		if !isKeyNameCharValid(tkn[1]){
+			list = append(list, "2_" + fmt.Sprintf("%d",(i)) + " " + tkn[1])
+			err_flag = true
+		} */
+		
+	}
+
+	if err_flag {
+		err = errors.New("Invalid key(s) found.")
+	}
+	return list, err
+}
+
+
 // CheckKeyUnicity()
 //
-// Parse all keys/conditional statements from a slice of tokens (use ParseInSlice())
+// Parse all keys/conditional statements from a slice of tokens (use ParseInSlice() or FuzzyParseInSlice())
 // and returns an error if they are non unique plus a list of non unique token keys if any.
+// Would make sense to be ran after CheckKeyValidity()()
 // If err is nil then all is good.
 func (v *VDFFile) CheckKeyUnicity(tokens [][]string) (list []string, err error) {
 	v.log(fmt.Sprintf("CheckKeyUnicity()"))
@@ -169,6 +213,7 @@ func (v *VDFFile) CheckKeyUnicity(tokens [][]string) (list []string, err error) 
 // CheckIsolatedConditionalStatements()
 //
 // Search in a byte buffer for isolated conditional statements which is an invalid VDF form.
+// Would make sense to be ran after CheckKeyValidity()()
 func (v *VDFFile) CheckIsolatedConditionalStatements(buf []byte) (list []string, err error) {
 	v.log(fmt.Sprintf("CheckIsolatedConditionalStatements()"))
 
@@ -189,51 +234,6 @@ func (v *VDFFile) CheckIsolatedConditionalStatements(buf []byte) (list []string,
 		err = errors.New("Isolated conditional statement(s) found.")
 	}
 
-	return list, err
-}
-
-
-
-// CheckKeyValidity()
-//
-// Far from being bulletproof since key value pairs detection is based on valid characters. 
-//  
-// Parse all keys statements from a slice of tokens (use ParseInSlice())
-// and returns an error if they are invalid (longer than autorized maxKeyLen or containing spaces/tabs or other non english characters)
-// plus a list of the offending token keys if any.
-
-func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error) {
-	v.log(fmt.Sprintf("CheckKeyValidity()"))
-
-	// Parse all keys
-	err_flag := false
-
-	var isKeyNameCharValid = regexp.MustCompile(`^[0-9a-zA-Z\[\]\$#_:&!\|.\-\+]+$`).MatchString 
-
-	for _, tkn := range tokens {
-		// fmt.Printf("|1>%s|2>%s|3>%s|4>%s\n",tkn[1],tkn[2],tkn[3],tkn[4] )
-		if len(tkn[1]) > v.maxKeyLen || strings.ContainsAny(tkn[1]," \r\n\t") || !isKeyNameCharValid(tkn[1]){
-			list = append(list, tkn[1])
-			err_flag = true
-		}
-		/* DEBUG if len(tkn[1]) > v.maxKeyLen {
-			list = append(list, "1_" + fmt.Sprintf("%d",(i)) + tkn[1])
-			err_flag = true
-		}
-		if strings.ContainsAny(tkn[1]," \r\n\t"){
-			list = append(list, "2_" + fmt.Sprintf("%d",(i)) + tkn[1])
-			err_flag = true
-		}
-		if !isKeyNameCharValid(tkn[1]){
-			list = append(list, "3_" + fmt.Sprintf("%d",(i)) + tkn[1])
-			err_flag = true
-		} */
-		
-	}
-
-	if err_flag {
-		err = errors.New("Invalid key(s) found.")
-	}
 	return list, err
 }
 

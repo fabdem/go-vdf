@@ -54,7 +54,7 @@ func New(filePathAndName string) (*VDFFile, error) {
 	v.debug = g_debug
 	v.logWriter = g_logWriter
 	v.sourceTkn = false // default behavior: we ignore tokens names including "[english]"
-	v.maxKeyLen = 80    // characters - default maximum autorised length for keys
+	v.maxKeyLen = 120    // characters - default maximum autorised length for keys
 
 	// Open the file for reading
 	f, err := os.Open(filePathAndName)
