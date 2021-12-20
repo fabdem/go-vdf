@@ -18,6 +18,7 @@ var m_pluralGender map[string]interface{}
 // var suffixesPluralGender []string
 var pluralTag string
 var genderTags []string
+var allTags []string
 var json *config.Config
 
 const defaultJson = "pluralgender.json" // located along with the exe or bin
@@ -44,6 +45,8 @@ func init() {
 	}
 
 	pluralTag = "#|#"
+
+	allTags = append(genderTags, pluralTag)
 
 	// Try to load the default config file
 	json, _ = config.New(defaultJson)
@@ -367,10 +370,32 @@ func (v *VDFFile) FilterPlrGdr(in []string) (out []string) {
 	return out
 }
 
+
+// checkNonPlrlGdr()
+//
+// Check that the value of a non plural/gender key doesn't contain
+// plural separators or gender markers.
+// 	Input:
+//		- token value
+// 	Output:
+//		- issue == nil if no syntax issue
+//		- err != nil if processing error
+//
+func checkNonPlrlGdr(k string, v string) (res string, err error) {
+	for _, t := range allTags {
+		if strings.Index(v, t) != -1 {
+			res = fmt.Sprintf("Found plural separators and/or gender markers (%s) in a non gendered/plural token: %s - %s", t, k, v)
+			break
+		}
+	}
+	return res, err
+}
+
 // CheckPlrlGendrTokenVal()
 //
 // Check plural and gender syntax of a token value.
-// If it's not a plural or gender token just ignore (return nil string).
+// If it's not a plural or gender token just ignore (return nil string)
+// unless there are plural separators or gender markers in the value.
 // 	Input:
 //		- token name
 //		- token value
@@ -386,7 +411,12 @@ func (v *VDFFile) CheckPlrlGendrTokenVal(tkn string, val string, language string
 		if f, ok := m_pluralGender[tkn[idx:]]; ok {
 			issue, err = f.(func(string, string, string) (string, error))(tkn, val, language) // Check syntax
 			// bOK,bArrayRes := record.fctOpen.(func (string) (bool,[]byte))(openingTag)
+		} else {
+			issue, err = checkNonPlrlGdr(tkn, val) // check value of non plrl/gender token
 		}
+	} else {
+		issue, err = checkNonPlrlGdr(tkn, val) // check value of a non plrl/gender token
 	}
+
 	return issue, err
 }
