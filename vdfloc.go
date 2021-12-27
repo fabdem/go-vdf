@@ -20,7 +20,6 @@ type VDFFile struct {
 	encoding    string
 	logWriter   io.Writer
 	sourceTkn   bool // Define whether we keep the [english] tokens or not
-	debug       bool
 	maxKeyLen	int  // Maximum autorised char length of keys
 	// cParenth     []byte
 	// cDbleQuote   []byte
@@ -51,7 +50,6 @@ func New(filePathAndName string) (*VDFFile, error) {
 	var err error
 	v.pathAndName = filePathAndName
 	v.fileName = filepath.Base(filePathAndName)
-	v.debug = g_debug
 	v.logWriter = g_logWriter
 	v.sourceTkn = false // default behavior: we ignore tokens names including "[english]"
 	v.maxKeyLen = 120    // characters - default maximum autorised length for keys
@@ -119,7 +117,7 @@ func SetDebug(debug bool, logWriter io.Writer) {
 
 // Log writer
 func (v *VDFFile) log(a interface{}) {
-	if v.debug {
+	if g_debug {
 		if v.logWriter != nil {
 			timestamp := time.Now().Format(time.RFC3339)
 			msg := fmt.Sprintf("%v: %v", timestamp, a)

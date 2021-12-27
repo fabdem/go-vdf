@@ -167,6 +167,7 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 	}
 
 	var total int
+	minIdx := 32767  // Looks for the 1st tag's position (initial value arbitrarily high)
 
 	for _, gender := range genderTags { // check all gender tag possible
 
@@ -182,12 +183,19 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 		} else { // (ct == 1 && ok) || (ct ==0 && !ok)
 			if ok && ct == 1 {
 				total++
+				if idx := strings.Index(v, gender); idx < minIdx {
+					minIdx = idx
+				}
 			}
 		}
 	}
 
 	if total != len(l) { // If we don't have one of each -> syntax problem
 		res = fmt.Sprintf("Error with gender form - expected %s", list)
+	}
+	
+	if len(l) > 1 && minIdx <= 0 {	// The 1st gender tag needs to be at idx 0 otherwise syntax err
+		res = fmt.Sprintf("Error with gender form - the first gender tag should be at the begining of the string.")
 	}
 
 	return res, err
@@ -374,28 +382,30 @@ func (v *VDFFile) FilterPlrGdr(in []string) (out []string) {
 // checkNonPlrlGdr()
 //
 // Check that the value of a non plural/gender key doesn't contain
-// plural separators or gender markers.
+// plural separators or gender tags.
 // 	Input:
 //		- token value
 // 	Output:
 //		- issue == nil if no syntax issue
 //		- err != nil if processing error
 //
-func checkNonPlrlGdr(k string, v string) (res string, err error) {
-	for _, t := range allTags {
-		if strings.Index(v, t) != -1 {
-			res = fmt.Sprintf("Found plural separators and/or gender markers (%s) in a non gendered/plural token: %s - %s", t, k, v)
+func (v *VDFFile) CheckNonPlrlGdr(key string, val string) (issue string, err error) {
+	v.log(fmt.Sprintf("CheckNonPlrlGdr(%s, %s)", key, val))
+
+	for _, tag := range allTags {
+		if strings.Index(val, tag) != -1 {
+			issue = fmt.Sprintf("Error - found plural separators and/or gender tags (%s) in a non gendered/plural token: %s - %s", tag, key, val)
 			break
 		}
 	}
-	return res, err
+	return issue, err
 }
 
 // CheckPlrlGendrTokenVal()
 //
 // Check plural and gender syntax of a token value.
 // If it's not a plural or gender token just ignore (return nil string)
-// unless there are plural separators or gender markers in the value.
+// unless there are plural separators or gender tags in the value.
 // 	Input:
 //		- token name
 //		- token value
@@ -406,17 +416,13 @@ func checkNonPlrlGdr(k string, v string) (res string, err error) {
 //
 func (v *VDFFile) CheckPlrlGendrTokenVal(tkn string, val string, language string) (issue string, err error) {
 	v.log(fmt.Sprintf("CheckPlrlGendrTokenVal(%s, %s, %s)", tkn, val, language))
+	// fmt.Printf("CheckPlrlGendrTokenVal(%s, %s, %s)", tkn, val, language)
 
 	if idx := strings.LastIndex(tkn, ":"); idx > 0 {
 		if f, ok := m_pluralGender[tkn[idx:]]; ok {
 			issue, err = f.(func(string, string, string) (string, error))(tkn, val, language) // Check syntax
 			// bOK,bArrayRes := record.fctOpen.(func (string) (bool,[]byte))(openingTag)
-		} else {
-			issue, err = checkNonPlrlGdr(tkn, val) // check value of non plrl/gender token
 		}
-	} else {
-		issue, err = checkNonPlrlGdr(tkn, val) // check value of a non plrl/gender token
 	}
-
 	return issue, err
 }
