@@ -194,8 +194,8 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 		res = fmt.Sprintf("Error with gender form - expected %s", list)
 	}
 	
-	if len(l) > 1 && minIdx <= 0 {	// The 1st gender tag needs to be at idx 0 otherwise syntax err
-		res = fmt.Sprintf("Error with gender form - the first gender tag should be at the begining of the string.")
+	if len(l) > 1 && minIdx > 0 {	// The 1st gender tag needs to be at idx 0 otherwise syntax err
+		res = fmt.Sprintf("Error with gender form - the first gender tag should be at the begining of the string. Found at position %d", minIdx)
 	}
 
 	return res, err
@@ -390,7 +390,7 @@ func (v *VDFFile) FilterPlrGdr(in []string) (out []string) {
 //		- err != nil if processing error
 //
 func (v *VDFFile) CheckNonPlrlGdr(key string, val string) (issue string, err error) {
-	v.log(fmt.Sprintf("CheckNonPlrlGdr(%s, %s)", key, val))
+	// v.log(fmt.Sprintf("CheckNonPlrlGdr(%s, %s)", key, val)) remove log out of concerns about performance impact
 
 	for _, tag := range allTags {
 		if strings.Index(val, tag) != -1 {
