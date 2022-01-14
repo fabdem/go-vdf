@@ -4,7 +4,7 @@ package vdfloc
 
 import (
 	"fmt"
-	"go-vdfloc/config"
+	"github.com/fabdem/go-vdfloc/config"
 	"strings"
 )
 
