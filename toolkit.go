@@ -141,7 +141,7 @@ func GetEnFileName(locFileName string) (enFileName string, err error) {
 // Not bulletproof since key value pairs detection is based on valid characters. 
 //  
 // Parse all keys statements from a slice of tokens (use FuzzyParseInSlice())
-// and returns an error if they are invalid (longer than autorized maxKeyLen or containing spaces/tabs or other non english characters)
+// and returns an error if they are invalid (longer than autorized maxKeyLen or empty or containing tabs or other non english characters)
 // plus a list of the offending token keys if any.
 
 func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error) {
@@ -150,11 +150,11 @@ func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error)
 	// Parse all keys
 	err_flag := false
 
-	var isKeyNameCharValid = regexp.MustCompile(`^[0-9a-zA-Z\[\]\$#_:&!\|.\-\+/ \^']+$`).MatchString 
+	var isKeyNameCharValid = regexp.MustCompile(`^[0-9a-zA-Z\[\]\$#_:&!\|.\-\+/ \^'\{\}]+$`).MatchString 
 
 	for _, tkn := range tokens {
 		// fmt.Printf("|1>%s|2>%s|3>%s|4>%s\n",tkn[1],tkn[2],tkn[3],tkn[4] )
-		if len(tkn[1]) > v.maxKeyLen || !isKeyNameCharValid(tkn[1]){
+		if len(tkn[1]) > v.maxKeyLen || len(tkn[1]) <= 0 || !isKeyNameCharValid(tkn[1]){
 			list = append(list, tkn[1])
 			err_flag = true
 		}
