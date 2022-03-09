@@ -67,6 +67,26 @@ func (v *VDFFile) SkipHeader(buf []byte) (res []byte, err error) {
 	return res, nil
 }
 
+// GetHeader() Returns the "vdf header".
+// And a very unlikely Error
+//
+func (v *VDFFile) GetHeader(buf []byte) (res []byte, err error) {
+	v.log("GetHeader()")
+
+	getPattern, err := regexp.Compile(`(?mi)^\s*"[a-z]{1,15}"\s*\{`)
+	if err != nil {
+		return res, fmt.Errorf("Err in regEx: %v", err)
+	}
+
+	idxes := getPattern.FindAllIndex(buf, -1)
+
+	if idxes == nil {
+		return nil, nil
+	}
+	lastIdx := idxes[len(idxes)-1][1]
+	return buf[0:lastIdx], nil
+}
+
 // ParseInMap()
 //
 // Parse all key/values in a map
