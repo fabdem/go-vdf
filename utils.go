@@ -1,9 +1,9 @@
 package vdfloc
 
 import (
-	// "fmt"
-	"io"
+	"fmt"
 	"errors"
+	"io"
 	"os"
 	"unicode/utf8"
 
@@ -136,3 +136,103 @@ func UTFReader(f *os.File, encodingName string) (r io.Reader, encodingFound stri
 
 	return transform.NewReader(f, unicode.BOMOverride(enc.NewDecoder())), encodingFound, nil
 }
+
+// UTF8Conv()
+// Convert a UTF8 buffer to UTF16BE or LE
+//	encodingName can be UTF16LE, UTF16BE, UTF8BOM, UTF8
+// 	if encoding name is UTF8 or UTF8BOM returns buf
+//
+func UTF8Conv(buf []byte, encodingName string) (out []byte, err error) {
+
+	var enc encoding.Encoding
+
+	switch encodingName {
+	case "UTF8":
+		return buf, nil
+	case "UTF8BOM":
+		return buf, nil
+	case "UTF16LE":
+		enc = unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	case "UTF16BE":
+		enc = unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM)
+	}
+
+	var utfEncoder *encoding.Encoder
+	utfEncoder = enc.NewEncoder()
+	out, err = utfEncoder.Bytes(buf)
+	
+	return out, nil
+	// utf16le := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	// utfEncoder = utf16le.NewEncoder()
+	// line, err = utfEncoder.String(line)
+}
+
+type UTF8Enc struct {
+	encoding    string		// "UTF8", "UTF8BOM", etc.
+	utfEncoder	*encoding.Encoder
+	f           *os.File
+	fileName	string
+}
+// Create a new instance
+// - In: File name/path and encoding
+// - Returns instance and error code
+func NewUTFConvWriter(filePathAndName, encodingName string) (u *UTF8Enc, err error) {
+
+	u = &UTF8Enc{} // Create instance
+
+	if filePathAndName == "" {
+		// Stdout
+		filePathAndName = "Stdout"
+		u.f = os.Stdout
+	} else {
+		// Open the file for reading
+		u.f, err = os.Open(filePathAndName)
+		if err != nil {
+			return nil, fmt.Errorf("Unable to open file %s - %v", filePathAndName, err)
+		}
+	}
+	u.fileName = filePathAndName
+
+	var enc encoding.Encoding
+
+	switch encodingName {
+	case "UTF8":
+	case "UTF8BOM":
+	case "UTF16LE":
+		enc = unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+	case "UTF16BE":
+		enc = unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM)
+	default:
+	}
+
+	if enc != nil {
+		u.utfEncoder = enc.NewEncoder()
+	}
+
+	return u, nil
+}
+
+
+// UTF8ConvWriter()
+// Convert a UTF8 buffer to UTF16BE or LE
+//	encodingName can be UTF16LE, UTF16BE, UTF8BOM, UTF8
+// 	if encoding name is UTF8 or UTF8BOM skip the convertion
+// Returns the number of bytes writen
+//
+func (u *UTF8Enc) Write(buf []byte) (n int, err error) {
+	var out []byte
+	if u.utfEncoder != nil {
+		out, err = u.utfEncoder.Bytes(buf)
+		if err != nil {
+			return 0, fmt.Errorf("Unable to convert %v - %v", buf, err)
+		}
+	} else {
+		out = buf
+	}
+	n, err = u.f.Write(out)
+	if err != nil {
+		return 0, fmt.Errorf("Unable writing %v - %v", out, err)
+	}
+	return n, nil	
+}
+
