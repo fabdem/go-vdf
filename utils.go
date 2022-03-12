@@ -145,63 +145,63 @@ func UTFReader(f *os.File, encodingName string) (r io.Reader, encodingFound stri
 func UTF8Conv(buf []byte, encodingName string) (out []byte, err error) {
 
 	var enc encoding.Encoding
-
+	var bom []byte
+	
 	switch encodingName {
 	case "UTF8":
 		return buf, nil
 	case "UTF8BOM":
+		bom = []byte{0xEF, 0xBB, 0xBF}  // printout a BOM
 		return buf, nil
 	case "UTF16LE":
-		enc = unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+		enc = unicode.UTF16(unicode.LittleEndian, unicode.UseBOM )
 	case "UTF16BE":
-		enc = unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM)
+		enc = unicode.UTF16(unicode.BigEndian, unicode.UseBOM )
 	}
 
 	var utfEncoder *encoding.Encoder
 	utfEncoder = enc.NewEncoder()
 	out, err = utfEncoder.Bytes(buf)
 	
-	return out, nil
-	// utf16le := unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
-	// utfEncoder = utf16le.NewEncoder()
-	// line, err = utfEncoder.String(line)
+	return append(bom,out...), nil
 }
 
 type UTF8Enc struct {
 	encoding    string		// "UTF8", "UTF8BOM", etc.
 	utfEncoder	*encoding.Encoder
 	f           *os.File
-	fileName	string
+	ioName		string      // file, stdout, etc.
 }
 // Create a new instance
-// - In: File name/path and encoding
+// - In: File name/path ("" for stdout) and encoding
 // - Returns instance and error code
-func NewUTFConvWriter(filePathAndName, encodingName string) (u *UTF8Enc, err error) {
+func NewUTFConvWriter(ioName, encodingName string) (u *UTF8Enc, err error) {
 
 	u = &UTF8Enc{} // Create instance
 
-	if filePathAndName == "" {
+	if ioName == "" {
 		// Stdout
-		filePathAndName = "Stdout"
+		ioName = "stdout"
 		u.f = os.Stdout
 	} else {
 		// Open the file for reading
-		u.f, err = os.Open(filePathAndName)
+		u.f, err = os.Open(ioName)
 		if err != nil {
-			return nil, fmt.Errorf("Unable to open file %s - %v", filePathAndName, err)
+			return nil, fmt.Errorf("Unable to open file %s - %v", ioName, err)
 		}
 	}
-	u.fileName = filePathAndName
+	u.ioName = ioName
 
 	var enc encoding.Encoding
 
 	switch encodingName {
 	case "UTF8":
 	case "UTF8BOM":
+		u.f.Write([]byte{0xEF, 0xBB, 0xBF})  // printout a BOM
 	case "UTF16LE":
-		enc = unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM)
+		enc = unicode.UTF16(unicode.LittleEndian, unicode.UseBOM )
 	case "UTF16BE":
-		enc = unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM)
+		enc = unicode.UTF16(unicode.BigEndian, unicode.UseBOM )
 	default:
 	}
 
@@ -231,8 +231,13 @@ func (u *UTF8Enc) Write(buf []byte) (n int, err error) {
 	}
 	n, err = u.f.Write(out)
 	if err != nil {
-		return 0, fmt.Errorf("Unable writing %v - %v", out, err)
+		return 0, fmt.Errorf("Unable to write: %v", err)
 	}
 	return n, nil	
 }
 
+// Close()
+// 
+func (u *UTF8Enc) Close() (err error) {
+	return u.f.Close()
+}
