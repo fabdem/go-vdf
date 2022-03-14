@@ -140,8 +140,9 @@ func GetEnFileName(locFileName string) (enFileName string, err error) {
 // Has better chances to work with non English files.
 // Not bulletproof since key value pairs detection is based on valid characters. 
 //  
-// Parse all keys statements from a slice of tokens (use FuzzyParseInSlice())
-// and returns an error if they are invalid (longer than autorized maxKeyLen or empty or containing tabs or other non english characters)
+// Parse all keys statements from a slice of tokens (uses FuzzyParseInSlice())
+// and returns an error if they are invalid (longer than autorized maxKeyLen or empty
+// or containing tabs or other non english characters),
 // plus a list of the offending token keys if any.
 
 func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error) {
@@ -157,16 +158,7 @@ func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error)
 		if len(tkn[1]) > v.maxKeyLen || len(tkn[1]) <= 0 || !isKeyNameCharValid(tkn[1]){
 			list = append(list, tkn[1])
 			err_flag = true
-		}
-		/* DEBUG if len(tkn[1]) > v.maxKeyLen {
-			list = append(list, "1_" + fmt.Sprintf("%d",(i)) + " " + tkn[1])
-			err_flag = true
-		}
-		if !isKeyNameCharValid(tkn[1]){
-			list = append(list, "2_" + fmt.Sprintf("%d",(i)) + " " + tkn[1])
-			err_flag = true
-		} */
-		
+		}		
 	}
 
 	if err_flag {

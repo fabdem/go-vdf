@@ -93,9 +93,8 @@ func (v *VDFFile) GetHeader(buf []byte) (res []byte, err error) {
 func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) {
 	v.log(fmt.Sprintf("ParseInMap()"))
 
-	regex := `(?mi)^\s*"([a-z\d_:#\$\[\]!&\|]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
+	regex := `(?mi)^\s*"([a-z \{\}\d_:#\$\[\]!&\|]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
 
-	// var pairPattern = regexp.MustCompile(`(?mi)(?:^\s*")([a-z\d_:#\$]{1,})(?:"\s*")([^"\\]*(?:\\.[^"\\]*)*)"`)
 	pairPattern, err := regexp.Compile(regex)
 
 	if err != nil {
@@ -129,9 +128,8 @@ func (v *VDFFile) ParseInMap(buf []byte) (m_token map[string]string, err error) 
 func (v *VDFFile) ParseInSlice(buf []byte) (s_token [][]string, err error) {
 	v.log(fmt.Sprintf("ParseInSlice()"))
 
-	// regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"`
-	// regex = `(?mi)^\s*"([a-z\d_:#\$\[\]]{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
-	regex := `(?mi)^\s*"([a-z\d_:#\$\[\]!&\|.\-\+/ \^']{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
+	// regex := `(?mi)^\s*"([a-z\d_:#\$\[\]!&\|.\-\+/ \^']{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
+	regex := `(?mi)^\s*"([a-z \{\}\d_:#\$\[\]!&\|.\-\+/ \^']{1,})"\s*"([^"\\]*(?:\\.[^"\\]*)*)"(?:(?: |\t)*)(\[[^\]]*\])?(?:(?: |\t)*)(//.*)?`
 
 	pairPattern, err := regexp.Compile(regex)
 
