@@ -3,10 +3,12 @@ package vdfloc
 // Publicly available high level functions
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
-	"regexp"
+	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -68,7 +70,7 @@ func (v *VDFFile) GetStringsWithConditionalStatement() (s [][]string, err error)
 		//fmt.Println("%s\n",strings.TrimLeft(tkn[0], "\t \r\n"))
 		// Skip token names begining with [english] and the ones with no cond statements.
 		if !strings.HasPrefix(tkn[1], "[english]") && len(tkn[3]) > 0 {
-		
+
 			s = append(s, []string{strings.TrimLeft(tkn[0], "\t \r\n"), tkn[1], tkn[2], tkn[3], tkn[4]})
 		}
 	}
@@ -132,14 +134,12 @@ func GetEnFileName(locFileName string) (enFileName string, err error) {
 	}
 }
 
-
-
 // CheckKeyValidity()
 //
 // Tries to detect missing or wrongly escaped double quotes.
 // Has better chances to work with non English files.
-// Not bulletproof since key value pairs detection is based on valid characters. 
-//  
+// Not bulletproof since key value pairs detection is based on valid characters.
+//
 // Parse all keys statements from a slice of tokens (uses FuzzyParseInSlice())
 // and returns an error if they are invalid (longer than autorized maxKeyLen or empty
 // or containing tabs or other non english characters),
@@ -151,14 +151,14 @@ func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error)
 	// Parse all keys
 	err_flag := false
 
-	var isKeyNameCharValid = regexp.MustCompile(`^[0-9a-zA-Z\[\]\$#_:&!\|.\-\+/ \^'\{\}]+$`).MatchString 
+	var isKeyNameCharValid = regexp.MustCompile(`^[0-9a-zA-Z\[\]\$#_:&!\|.\-\+/ \^'\{\}]+$`).MatchString
 
 	for _, tkn := range tokens {
 		// fmt.Printf("|1>%s|2>%s|3>%s|4>%s\n",tkn[1],tkn[2],tkn[3],tkn[4] )
-		if len(tkn[1]) > v.maxKeyLen || len(tkn[1]) <= 0 || !isKeyNameCharValid(tkn[1]){
+		if len(tkn[1]) > v.maxKeyLen || len(tkn[1]) <= 0 || !isKeyNameCharValid(tkn[1]) {
 			list = append(list, tkn[1])
 			err_flag = true
-		}		
+		}
 	}
 
 	if err_flag {
@@ -166,7 +166,6 @@ func (v *VDFFile) CheckKeyValidity(tokens [][]string) (list []string, err error)
 	}
 	return list, err
 }
-
 
 // CheckKeyUnicity()
 //
@@ -182,7 +181,7 @@ func (v *VDFFile) CheckKeyUnicity(tokens [][]string) (list []string, err error) 
 	s := make(map[string]int)
 
 	for _, tkn := range tokens {
-		s[tkn[1] + tkn[3]]++
+		s[tkn[1]+tkn[3]]++
 	}
 
 	// Now builds a list of keys for which unicity is broken if any
@@ -199,8 +198,6 @@ func (v *VDFFile) CheckKeyUnicity(tokens [][]string) (list []string, err error) 
 	}
 	return list, err
 }
-
-
 
 // CheckIsolatedConditionalStatements()
 //
@@ -229,4 +226,94 @@ func (v *VDFFile) CheckIsolatedConditionalStatements(buf []byte) (list []string,
 	return list, err
 }
 
+// ConvVdf2json   VDF -> JSON
+//
+//  output converted content to File writer (e.g. Stdout)
+func (v *VDFFile) ConvVdf2json(out *os.File) (err error) {
+	v.log(fmt.Sprintf("ConvVdf2json()"))
 
+	filename := v.fileName
+
+	// Parse tokens
+	buf, err := v.ReadSource()
+	if err != nil {
+		return (fmt.Errorf("Error accessing file %s - %v", filename, err))
+	}
+
+	bHeader, err := v.GetHeader(buf)
+	if err != nil {
+		return (fmt.Errorf("Error reading file header %s - %v", filename, err))
+	}
+	header := string(bHeader)
+	footer := strings.Repeat("}", strings.Count(header, "{")) // Build footer by counting the number of opening brackets in header
+
+	res, err := v.SkipHeader(buf)
+	if err != nil {
+		return (fmt.Errorf("Error reading vdf header of %s - %v", filename, err))
+	}
+
+	tokens, err := v.ParseInSlice(res)
+	if err != nil {
+		return (fmt.Errorf("Error parsing vdf of %s - %v", filename, err))
+	}
+
+	fileEncoding := v.GetEncoding()
+
+	v.log(fmt.Sprintf("Nb tokens: %d Encoding: %s", len(tokens), fileEncoding))
+
+	// opening json
+	out.Write([]byte("{\r\n\r\n"))
+
+	converted, err := conv2json("!vdf file encoding!", fileEncoding)
+	if err != nil {
+		return (fmt.Errorf("Error converting vdf to json %s - %v", filename, err))
+	}
+	out.Write([]byte(converted))
+	out.Write([]byte(",\r\n"))
+
+	// Building header
+	converted, err = conv2json("!vdf file header!", header)
+	if err != nil {
+		return (fmt.Errorf("Error converting vdf to json %s - %v", filename, err))
+	}
+	out.Write([]byte(converted))
+	out.Write([]byte(",\r\n"))
+
+	// We want to preserve the source order so converting each token at a time
+	for _, token := range tokens {
+		converted, err := conv2json(token[1]+token[3], token[2]) // Concatene key and optional conditional statement.
+		if err != nil {
+			return (fmt.Errorf("Error converting vdf to json %s - %v", filename, err))
+		}
+		out.Write([]byte(converted))
+		out.Write([]byte(",\r\n"))
+	}
+
+	// Building footer
+	converted, err = conv2json("!vdf file footer!", footer)
+	if err != nil {
+		return (fmt.Errorf("Error converting vdf to json %s - %v", filename, err))
+	}
+	out.Write([]byte(converted))
+
+	// closing json
+	out.Write([]byte("\r\n\r\n}\r\n"))
+
+	return nil
+}
+
+// conv2json()
+//
+// Convert a key and value to json
+func conv2json(key, value string) (line string, err error) {
+	kvs := make(map[string]string)
+	kvs[key] = value
+	conv, err := json.Marshal(kvs) // make both key and value json compliant.
+	if err != nil {
+		return "", err
+	}
+	line = strings.TrimLeft(string(conv), "{") // removing  extraneous {
+	line = strings.TrimRight(line, "}")        // removing  extraneous }
+
+	return line, nil
+}

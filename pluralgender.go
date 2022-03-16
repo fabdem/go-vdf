@@ -5,6 +5,7 @@ package vdfloc
 import (
 	"fmt"
 	"github.com/fabdem/go-vdfloc/config"
+	"regexp"
 	"strings"
 )
 
@@ -19,7 +20,7 @@ var m_pluralGender map[string]interface{}
 var pluralTag string
 var genderTags []string
 var allTags []string
-var json *config.Config
+var conf *config.Config
 
 const defaultJson = "pluralgender.json" // located along with the exe or bin
 
@@ -49,7 +50,7 @@ func init() {
 	allTags = append(genderTags, pluralTag)
 
 	// Try to load the default config file
-	json, _ = config.New(defaultJson)
+	conf, _ = config.New(defaultJson)
 }
 
 // LoadJsonConf()
@@ -59,11 +60,11 @@ func init() {
 //		- path and name or nil if default
 // 	Output:
 //		- err != nil if error
-//		- update global var json
+//		- update global var conf
 //
 func LoadJsonConf(f string) (err error) {
 
-	json, err = config.New(f)
+	conf, err = config.New(f)
 
 	return err
 }
@@ -80,7 +81,7 @@ func LoadJsonConf(f string) (err error) {
 //		- err
 //
 func checkPlural(k string, v string, lang string) (res string, err error) {
-	n, err := json.GetPlural(lang)
+	n, err := conf.GetPlural(lang)
 	if err != nil {
 		return res, err
 	}
@@ -107,7 +108,7 @@ func checkPlural(k string, v string, lang string) (res string, err error) {
 //		- err
 //
 func checkGenderSender(k string, v string, lang string) (res string, err error) {
-	l, err := json.GetGenders(lang)
+	l, err := conf.GetGenders(lang)
 	if err != nil {
 		return res, err
 	}
@@ -156,7 +157,7 @@ func checkGenderSender(k string, v string, lang string) (res string, err error) 
 //		- err
 //
 func checkGenderReceiver(k string, v string, lang string) (res string, err error) {
-	l, err := json.GetGenders(lang)
+	l, err := conf.GetGenders(lang)
 	if err != nil {
 		return res, err
 	}
@@ -167,7 +168,7 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 	}
 
 	var total int
-	minIdx := 32767  // Looks for the 1st tag's position (initial value arbitrarily high)
+	minIdx := 32767 // Looks for the 1st tag's position (initial value arbitrarily high)
 
 	for _, gender := range genderTags { // check all gender tag possible
 
@@ -193,8 +194,8 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 	if total != len(l) { // If we don't have one of each -> syntax problem
 		res = fmt.Sprintf("Error with gender form - expected %s", list)
 	}
-	
-	if len(l) > 1 && minIdx > 0 {	// The 1st gender tag needs to be at idx 0 otherwise syntax err
+
+	if len(l) > 1 && minIdx > 0 { // The 1st gender tag needs to be at idx 0 otherwise syntax err
 		res = fmt.Sprintf("Error with gender form - the first gender tag should be at the begining of the string. Found at position %d", minIdx)
 	}
 
@@ -217,12 +218,12 @@ func checkGenderReceiver(k string, v string, lang string) (res string, err error
 //	E.g. "Valve_TestPluralGenders_Noun1:np"    "#|m|#Trésor#|m|#Trésors"
 //
 func checkGenderSenderPlural(k string, v string, lang string) (res string, err error) {
-	l, err := json.GetGenders(lang) // Get the list of gender tags
+	l, err := conf.GetGenders(lang) // Get the list of gender tags
 	if err != nil {
 		return res, err
 	}
 
-	nbPluralExpected, err := json.GetPlural(lang) // Get the number of plurals
+	nbPluralExpected, err := conf.GetPlural(lang) // Get the number of plurals
 	if err != nil {
 		return res, err
 	}
@@ -276,7 +277,7 @@ func checkGenderSenderPlural(k string, v string, lang string) (res string, err e
 // E.g. "Valve_TestPluralGenders_Adjective1:gp" "#|m|#peu Commun#|f|#peu Commune#|m|#peu Communs#|f|#peu Communes"
 //
 func checkGenderReceiverPlural(k string, v string, lang string) (res string, err error) {
-	lgGenderTags, err := json.GetGenders(lang) // Get the list of gender tags
+	lgGenderTags, err := conf.GetGenders(lang) // Get the list of gender tags
 	if err != nil {
 		return res, err // Processing error
 	}
@@ -286,7 +287,7 @@ func checkGenderReceiverPlural(k string, v string, lang string) (res string, err
 		list += (val + ",")
 	}
 
-	nbPluralExpected, err := json.GetPlural(lang) // Get the number of plurals
+	nbPluralExpected, err := conf.GetPlural(lang) // Get the number of plurals
 	if err != nil {
 		return res, err // Processing error
 	}
@@ -367,9 +368,11 @@ func checkGenderReceiverPlural(k string, v string, lang string) (res string, err
 func (v *VDFFile) FilterPlrGdr(in []string) (out []string) {
 	v.log(fmt.Sprintf("FilterPlrGdr()"))
 
+	var isKeyPlrExtForm = regexp.MustCompile(`:p\{[a-z_\d:]+\}$`).MatchString // capture the 'p:{value_name}' form
+
 	for _, tkn := range in {
 		for sufx, _ := range m_pluralGender {
-			if strings.HasSuffix(tkn, sufx) {
+			if strings.HasSuffix(tkn, sufx) || isKeyPlrExtForm(tkn) {
 				out = append(out, tkn)
 				break
 			}
@@ -377,7 +380,6 @@ func (v *VDFFile) FilterPlrGdr(in []string) (out []string) {
 	}
 	return out
 }
-
 
 // checkNonPlrlGdr()
 //
@@ -414,15 +416,17 @@ func (v *VDFFile) CheckNonPlrlGdr(key string, val string) (issue string, err err
 //		- issue == nil if no syntax issue or not a gender/plural variant
 //		- err
 //
-func (v *VDFFile) CheckPlrlGendrTokenVal(tkn string, val string, language string) (issue string, err error) {
-	v.log(fmt.Sprintf("CheckPlrlGendrTokenVal(%s, %s, %s)", tkn, val, language))
-	// fmt.Printf("CheckPlrlGendrTokenVal(%s, %s, %s)", tkn, val, language)
+func (v *VDFFile) CheckPlrlGendrTokenVal(token string, val string, language string) (issue string, err error) {
+	v.log(fmt.Sprintf("CheckPlrlGendrTokenVal(%s, %s, %s)", token, val, language))
 
-	if idx := strings.LastIndex(tkn, ":"); idx > 0 {
-		if f, ok := m_pluralGender[tkn[idx:]]; ok {
-			issue, err = f.(func(string, string, string) (string, error))(tkn, val, language) // Check syntax
+	// Capture tag (:p, :n, :g, :gp, etc.) and call the right function to check syntax
+	if capturedTag := regexp.MustCompile(`(:[png]{1,2})(?:\{[a-z_\d:]+\})?$`).FindStringSubmatch(token); len(capturedTag) > 1 {
+
+		if f, ok := m_pluralGender[capturedTag[1]]; ok {
+			issue, err = f.(func(string, string, string) (string, error))(token, val, language) // Check syntax
 			// bOK,bArrayRes := record.fctOpen.(func (string) (bool,[]byte))(openingTag)
 		}
 	}
+	
 	return issue, err
 }
