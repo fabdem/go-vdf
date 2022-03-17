@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"io"
+	"bufio"
 )
 
 // GetTokenNames()
@@ -316,4 +318,71 @@ func conv2json(key, value string) (line string, err error) {
 	line = strings.TrimRight(line, "}")        // removing  extraneous }
 
 	return line, nil
+}
+
+
+// ConvJson2Vdf   JSON -> VDF
+//
+//	input: name/path of json file
+//  output: converted content to File writer (e.g. Stdout)
+func ConvJson2Vdf(jsonfile string, out *os.File) (err error) {
+	// v.log(fmt.Sprintf("onvVdf2Json()"))
+
+	f, err := os.Open(jsonfile)
+	if err != nil {
+		return fmt.Errorf("Unable to open json file %s - %v", jsonfile, err)
+	}
+	
+	dec := json.NewDecoder(bufio.NewReader(f))
+	
+	var list [][]string   // will store the actual file data 
+	idx := 0
+	var key string
+	var encoding, header, footer string  // we'll capture them on the fly
+	for {
+		tkn, err := dec.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("Error decoding json file %s - %v", tkn, err)
+		}
+		switch tkn.(type) {
+        case string:
+			if idx % 2 == 0 {
+				key = tkn.(string)
+			} else {
+				switch key {
+				case "!vdf file encoding!":
+					encoding = tkn.(string)
+				case "!vdf file header!":
+					header = tkn.(string)
+				case "!vdf file footer!":
+					footer = tkn.(string)
+				default:
+					list = append(list, [][]string{{key, tkn.(string)}}...)
+				}
+			}
+			idx++
+        default:
+            // Ignore
+        }
+	}
+
+	out.Write([]byte(encoding))
+	out.Write([]byte(header))
+	out.Write([]byte(",\r\n"))
+	
+	for _,v := range list {
+		out.Write([]byte("\""))
+		out.Write([]byte(v[0]))
+		out.Write([]byte("\"\t\""))
+		out.Write([]byte(v[1]))
+		out.Write([]byte("\"\r\n"))
+	}
+	
+	out.Write([]byte(footer))
+	out.Write([]byte(",\r\n"))
+
+	return nil
 }

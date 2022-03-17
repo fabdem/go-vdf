@@ -55,12 +55,11 @@ func New(filePathAndName string) (*VDFFile, error) {
 	v.maxKeyLen = 120    // characters - default maximum autorised length for keys
 
 	// Open the file for reading
-	f, err := os.Open(filePathAndName)
+	v.f, err = os.Open(filePathAndName)
 	if err != nil {
 		return nil, fmt.Errorf("Unable to open file %s - %v", filePathAndName, err)
 	}
 
-	v.f = f
 	// Default encoding: utf8 no bom
 	// v.cParenth = []byte{'{'}
 	// v.cDbleQuote = []byte{'"'}
