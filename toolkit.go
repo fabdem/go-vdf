@@ -283,7 +283,10 @@ func (v *VDFFile) ConvVdf2json(out *os.File) (err error) {
 
 	// We want to preserve the source order so converting each token at a time
 	for _, token := range tokens {
-		converted, err := conv2json(token[1]+token[3], token[2]) // Concatene key and optional conditional statement.
+		if len(token[3]) > 0 { // if there's a cond statement surround it with brackets e.g. [[$WIN32]]
+			token[3] = "[" + token[3] + "]" 
+		}
+		converted, err := conv2json(token[1]+token[3], token[2]) // Concatene key and possibly a conditional statement.
 		if err != nil {
 			return (fmt.Errorf("Error converting vdf to json %s - %v", filename, err))
 		}
@@ -371,18 +374,35 @@ func ConvJson2Vdf(jsonfile string, out *os.File) (err error) {
 
 	out.Write([]byte(encoding))
 	out.Write([]byte(header))
-	out.Write([]byte(",\r\n"))
+	out.Write([]byte("\r\n"))
+	out.Write([]byte("\r\n"))
 	
 	for _,v := range list {
 		out.Write([]byte("\""))
-		out.Write([]byte(v[0]))
+		i := strings.Index(v[0], "[[$")  // Look for a connditional statement
+		var condStatement, justThekey string
+		switch {
+		case i == 0:
+			return fmt.Errorf("Error in data: key with just a conditional statement %s", v[0])
+		case i <0: // no conditional statement
+			justThekey = v[0]
+		case i > 0:
+			justThekey = v[0][:i]
+			condStatement = v[0][i+1 : len(v[0]) - 1]
+		}
+		out.Write([]byte(justThekey))
 		out.Write([]byte("\"\t\""))
 		out.Write([]byte(v[1]))
-		out.Write([]byte("\"\r\n"))
+		out.Write([]byte("\""))
+		if len(condStatement) > 0 {
+			out.Write([]byte("\t"))
+			out.Write([]byte(condStatement))		
+		}
+		out.Write([]byte("\r\n"))
 	}
 	
+	out.Write([]byte("\r\n"))
 	out.Write([]byte(footer))
-	out.Write([]byte(",\r\n"))
 
 	return nil
 }
