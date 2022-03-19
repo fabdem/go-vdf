@@ -368,7 +368,7 @@ func checkGenderReceiverPlural(k string, v string, lang string) (res string, err
 func (v *VDFFile) FilterPlrGdr(in []string) (out []string) {
 	v.log(fmt.Sprintf("FilterPlrGdr()"))
 
-	var isKeyPlrExtForm = regexp.MustCompile(`:p\{[a-z_\d:]+\}$`).MatchString // capture the 'p:{value_name}' form
+	var isKeyPlrExtForm = regexp.MustCompile(`:p\{[a-zA-Z_\d:]+\}$`).MatchString // capture the 'p:{value_name}' form
 
 	for _, tkn := range in {
 		for sufx, _ := range m_pluralGender {
@@ -420,7 +420,7 @@ func (v *VDFFile) CheckPlrlGendrTokenVal(token string, val string, language stri
 	v.log(fmt.Sprintf("CheckPlrlGendrTokenVal(%s, %s, %s)", token, val, language))
 
 	// Capture tag (:p, :n, :g, :gp, etc.) and call the right function to check syntax
-	if capturedTag := regexp.MustCompile(`(:[png]{1,2})(?:\{[a-z_\d:]+\})?$`).FindStringSubmatch(token); len(capturedTag) > 1 {
+	if capturedTag := regexp.MustCompile(`(:[png]{1,2})(?:\{[a-zA-Z_\d:]+\})?$`).FindStringSubmatch(token); len(capturedTag) > 1 {
 
 		if f, ok := m_pluralGender[capturedTag[1]]; ok {
 			issue, err = f.(func(string, string, string) (string, error))(token, val, language) // Check syntax
