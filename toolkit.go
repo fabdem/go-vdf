@@ -230,7 +230,8 @@ func (v *VDFFile) CheckIsolatedConditionalStatements(buf []byte) (list []string,
 
 // ConvVdf2json   VDF -> JSON
 //
-//  output converted content to File writer (e.g. Stdout)
+//  Output converted content to File writer (e.g. Stdout)
+//  Output encoding: utf8 
 func (v *VDFFile) ConvVdf2json(out *os.File) (err error) {
 	v.log(fmt.Sprintf("ConvVdf2json()"))
 
@@ -247,7 +248,7 @@ func (v *VDFFile) ConvVdf2json(out *os.File) (err error) {
 		return (fmt.Errorf("Error reading file header %s - %v", filename, err))
 	}
 	header := string(bHeader)
-	footer := strings.Repeat("}", strings.Count(header, "{")) // Build footer by counting the number of opening brackets in header
+	footer := strings.Repeat("}\r\n", strings.Count(header, "{")) // Build footer by counting the number of opening brackets in header
 
 	res, err := v.SkipHeader(buf)
 	if err != nil {
@@ -337,11 +338,12 @@ func ConvJson2Vdf(jsonfile string, out *os.File) (err error) {
 	}
 	
 	dec := json.NewDecoder(bufio.NewReader(f))
-	
+
+	// Build a list of tokens (following json order)
 	var list [][]string   // will store the actual file data 
 	idx := 0
 	var key string
-	var encoding, header, footer string  // we'll capture them on the fly
+	var fileEncoding, header, footer string  // we'll capture them on the fly
 	for {
 		tkn, err := dec.Token()
 		if err == io.EOF {
@@ -357,7 +359,7 @@ func ConvJson2Vdf(jsonfile string, out *os.File) (err error) {
 			} else {
 				switch key {
 				case "!vdf file encoding!":
-					encoding = tkn.(string)
+					fileEncoding = tkn.(string)
 				case "!vdf file header!":
 					header = tkn.(string)
 				case "!vdf file footer!":
@@ -371,38 +373,44 @@ func ConvJson2Vdf(jsonfile string, out *os.File) (err error) {
             // Ignore
         }
 	}
+	// fmt.Printf("enc=%s\n",fileEncoding)
 
-	out.Write([]byte(encoding))
-	out.Write([]byte(header))
-	out.Write([]byte("\r\n"))
-	out.Write([]byte("\r\n"))
+	// Output strings
+	u, err := NewUTFConvWriter(out, fileEncoding) // Manages encoding
+	if err != nil {
+		return fmt.Errorf("Error setting encoding for vdf output %s - %v", fileEncoding, err)
+	}
+	
+	u.Write([]byte(header))
+	u.Write([]byte("\r\n"))
+	u.Write([]byte("\r\n"))
 	
 	for _,v := range list {
-		out.Write([]byte("\""))
-		i := strings.Index(v[0], "[[$")  // Look for a connditional statement
+		u.Write([]byte("\""))
+		i := strings.Index(v[0], "[[$")  // Looks for a connditional statement
 		var condStatement, justThekey string
 		switch {
 		case i == 0:
 			return fmt.Errorf("Error in data: key with just a conditional statement %s", v[0])
-		case i <0: // no conditional statement
+		case i <0: // No conditional statement
 			justThekey = v[0]
 		case i > 0:
 			justThekey = v[0][:i]
 			condStatement = v[0][i+1 : len(v[0]) - 1]
 		}
-		out.Write([]byte(justThekey))
-		out.Write([]byte("\"\t\""))
-		out.Write([]byte(v[1]))
-		out.Write([]byte("\""))
+		u.Write([]byte(justThekey))
+		u.Write([]byte("\"\t\""))
+		u.Write([]byte(v[1]))
+		u.Write([]byte("\""))
 		if len(condStatement) > 0 {
-			out.Write([]byte("\t"))
-			out.Write([]byte(condStatement))		
+			u.Write([]byte("\t"))
+			u.Write([]byte(condStatement))		
 		}
-		out.Write([]byte("\r\n"))
+		u.Write([]byte("\r\n"))
 	}
 	
-	out.Write([]byte("\r\n"))
-	out.Write([]byte(footer))
+	u.Write([]byte("\r\n"))
+	u.Write([]byte(footer))
 
 	return nil
 }

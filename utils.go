@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"strings"
 	"unicode/utf8"
 
 	"golang.org/x/text/encoding"
@@ -147,15 +148,15 @@ func UTF8Conv(buf []byte, encodingName string) (out []byte, err error) {
 	var enc encoding.Encoding
 	var bom []byte
 	
-	switch encodingName {
-	case "UTF8":
+	switch strings.ToLower(encodingName) {
+	case "utf8":
 		return buf, nil
-	case "UTF8BOM":
+	case "utf8bom":
 		bom = []byte{0xEF, 0xBB, 0xBF}  // printout a BOM
 		return buf, nil
-	case "UTF16LE":
+	case "utf16le":
 		enc = unicode.UTF16(unicode.LittleEndian, unicode.UseBOM )
-	case "UTF16BE":
+	case "utf16be":
 		enc = unicode.UTF16(unicode.BigEndian, unicode.UseBOM )
 	}
 
@@ -173,35 +174,33 @@ type UTF8Enc struct {
 	ioName		string      // file, stdout, etc.
 }
 // Create a new instance
-// - In: File name/path ("" for stdout) and encoding
+// - In: File (nil for stdout) and encoding
 // - Returns instance and error code
-func NewUTFConvWriter(ioName, encodingName string) (u *UTF8Enc, err error) {
+func NewUTFConvWriter(f *os.File, encodingName string) (u *UTF8Enc, err error) {
 
 	u = &UTF8Enc{} // Create instance
 
-	if ioName == "" {
+	if f == nil {
 		// Stdout
-		ioName = "stdout"
 		u.f = os.Stdout
-	} else {
-		// Open the file for reading
-		u.f, err = os.Open(ioName)
-		if err != nil {
-			return nil, fmt.Errorf("Unable to open file %s - %v", ioName, err)
-		}
 	}
-	u.ioName = ioName
+	u.f = f
+	u.ioName = f.Name()
 
 	var enc encoding.Encoding
 
-	switch encodingName {
-	case "UTF8":
-	case "UTF8BOM":
-		u.f.Write([]byte{0xEF, 0xBB, 0xBF})  // printout a BOM
-	case "UTF16LE":
-		enc = unicode.UTF16(unicode.LittleEndian, unicode.UseBOM )
-	case "UTF16BE":
-		enc = unicode.UTF16(unicode.BigEndian, unicode.UseBOM )
+	// fmt.Printf("enc=%s, outname=%s\n",encodingName, u.ioName)
+
+	switch strings.ToLower(encodingName) {
+	case "utf8":
+	case "utf8bom":
+		f.Write([]byte{0xEF, 0xBB, 0xBF})		// printout a BOM
+	case "utf16le":
+		f.Write([]byte{0xFF, 0xFE})  			// printout a BOM
+		enc = unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM )
+	case "utf16be":
+		f.Write([]byte{0xFE, 0xFF})			// printout a BOM
+		enc = unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM )
 	default:
 	}
 
